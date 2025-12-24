@@ -46,6 +46,7 @@ export const authOptions: NextAuthOptions = {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
+            image: user.image,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -102,6 +103,7 @@ export const authOptions: NextAuthOptions = {
       }
       if (user) {
         token.id = user.id;
+        token.picture = user.image;
       }
       return token;
     },
@@ -109,6 +111,7 @@ export const authOptions: NextAuthOptions = {
       // Send properties to the client, like an access_token and user id from a provider
       if (token) {
         session.user.id = token.id as string;
+        session.user.image = token.picture as string;
       }
       return session;
     },
