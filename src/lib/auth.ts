@@ -15,39 +15,42 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials) return null;
 
-        const client = await connectToDatabase();
-        const db = client.db();
+        let client;
+        try {
+          client = await connectToDatabase();
+          const db = client.db();
 
-        const user = await db.collection('users').findOne({
-          email: credentials.email,
-        });
+          const user = await db.collection('users').findOne({
+            email: credentials.email,
+          });
 
-        if (!user) {
-          client.close();
-          throw new Error('No user found!');
+          if (!user) {
+            throw new Error('No user found!');
+          }
+
+          if (user.verified === false) {
+            throw new Error('Email not verified');
+          }
+
+          const isValid = await verifyPassword(
+            credentials.password,
+            user.password
+          );
+
+          if (!isValid) {
+            throw new Error('Invalid password!');
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
+          throw error;
         }
-
-        if (user.verified === false) {
-          client.close();
-          throw new Error('Email not verified');
-        }
-
-        const isValid = await verifyPassword(
-          credentials.password,
-          user.password
-        );
-
-        if (!isValid) {
-          client.close();
-          throw new Error('Invalid password!');
-        }
-
-        client.close();
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-        };
+        // Don't close client in serverless - let connection pool handle it
       },
     }),
   ],
