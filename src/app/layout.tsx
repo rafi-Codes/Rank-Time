@@ -24,7 +24,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <SessionProvider>
+          <SessionProvider
+            session={null}
+            refetchInterval={5 * 60} // Refetch session every 5 minutes
+            refetchOnWindowFocus={true}
+            refetchWhenOffline={false}
+          >
             {children}
           </SessionProvider>
         </ThemeProvider>
