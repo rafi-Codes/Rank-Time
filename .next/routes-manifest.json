@@ -110,6 +110,12 @@
       "namedRegex": "^/api/user/stats(?:/)?$"
     },
     {
+      "page": "/api/user/update-avatar",
+      "regex": "^/api/user/update\\-avatar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/user/update\\-avatar(?:/)?$"
+    },
+    {
       "page": "/api/users/follow",
       "regex": "^/api/users/follow(?:/)?$",
       "routeKeys": {},
