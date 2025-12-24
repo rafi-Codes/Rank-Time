@@ -14,6 +14,7 @@ import TracksheetTab from '@/components/dashboard/TracksheetTab';
 import ProfileTab from '@/components/dashboard/ProfileTab';
 import GraphsTab from '@/components/dashboard/GraphsTab';
 import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
+import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 
 export default function Dashboard() {
   const { data: session } = useSession();
@@ -70,13 +71,14 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="stopwatch">Stopwatch</TabsTrigger>
             <TabsTrigger value="timer">Timer</TabsTrigger>
             <TabsTrigger value="tracksheet">Tracksheet</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="graphs">Graphs</TabsTrigger>
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+            <TabsTrigger value="codeforces">Codeforces</TabsTrigger>
           </TabsList>
 
           <TabsContent value="stopwatch">
@@ -101,6 +103,10 @@ export default function Dashboard() {
 
           <TabsContent value="leaderboard">
             <LeaderboardTab />
+          </TabsContent>
+
+          <TabsContent value="codeforces">
+            <CodeforcesTab />
           </TabsContent>
         </Tabs>
       </div>
