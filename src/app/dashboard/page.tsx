@@ -40,7 +40,8 @@ export default function Dashboard() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-2">
+              <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
             </div>
             <div className="flex items-center space-x-4">
