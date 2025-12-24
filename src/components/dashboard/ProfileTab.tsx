@@ -13,6 +13,7 @@ interface UserStats {
   user: {
     name: string;
     email: string;
+    image?: string;
     usertag: string;
     totalScore: number;
     currentStreak: number;
@@ -63,6 +64,12 @@ export default function ProfileTab() {
     generateAvatarOptions();
   }, []);
 
+  const loadUserAvatar = () => {
+    if (stats?.user?.image) {
+      setSelectedAvatar(stats.user.image);
+    }
+  };
+
   const generateAvatarOptions = () => {
     // Generate 6 random avatar options using DiceBear API
     const options = [];
@@ -73,11 +80,25 @@ export default function ProfileTab() {
     setAvatarOptions(options);
   };
 
-  const handleAvatarSelect = (avatarUrl: string) => {
-    setSelectedAvatar(avatarUrl);
-    setShowAvatarSelector(false);
-    // Here you could save the selected avatar to the user's profile
-    // For now, we'll just store it in local state
+  const handleAvatarSelect = async (avatarUrl: string) => {
+    try {
+      const response = await fetch('/api/user/update-avatar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ avatarUrl }),
+      });
+
+      if (response.ok) {
+        setSelectedAvatar(avatarUrl);
+        setShowAvatarSelector(false);
+      } else {
+        console.error('Failed to update avatar');
+      }
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+    }
   };
 
   const fetchUserStats = async () => {
@@ -86,6 +107,10 @@ export default function ProfileTab() {
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+        // Load the user's saved avatar
+        if (data.user.image) {
+          setSelectedAvatar(data.user.image);
+        }
       }
     } catch (error) {
       console.error('Error fetching user stats:', error);

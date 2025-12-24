@@ -12,6 +12,7 @@
   "/api/user/connect-codeforces/route": "/api/user/connect-codeforces",
   "/api/user/disconnect-codeforces/route": "/api/user/disconnect-codeforces",
   "/api/user/stats/route": "/api/user/stats",
+  "/api/user/update-avatar/route": "/api/user/update-avatar",
   "/api/users/follow/route": "/api/users/follow",
   "/api/users/following/route": "/api/users/following",
   "/api/users/search/route": "/api/users/search",

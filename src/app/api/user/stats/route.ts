@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       user: {
         name: user.name,
         email: user.email,
+        image: user.image,
         totalScore: user.totalScore,
         currentStreak: user.currentStreak,
         maxStreak: user.maxStreak,
