@@ -78,6 +78,19 @@ export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
 
+  // Load active tab from localStorage on mount
+  useEffect(() => {
+    const savedTab = localStorage.getItem('ranktime-active-tab');
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Save active tab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('ranktime-active-tab', activeTab);
+  }, [activeTab]);
+
   useEffect(() => {
     if (status === 'loading') return; // Still loading
     if (!session) {
@@ -109,15 +122,30 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden sm:block">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Welcome,{' '}
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
-                  >
-                    {session.user?.name || session.user?.email}
-                  </button>
-                </span>
+                <div className="flex items-center space-x-2">
+                  {session.user?.image ? (
+                    <img
+                      src={session.user.image}
+                      alt="Profile Avatar"
+                      className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">
+                        {(session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    Welcome,{' '}
+                    <button
+                      onClick={() => setActiveTab('profile')}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                    >
+                      {session.user?.name || session.user?.email}
+                    </button>
+                  </span>
+                </div>
               </div>
               <Button
                 onClick={() => signOut()}
