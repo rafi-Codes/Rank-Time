@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Pause, Square, Plus, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Play, Pause, Square, Plus, Trash2, Download } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface Lap {
   id: string;
@@ -17,7 +19,27 @@ interface Lap {
   comment?: string;
 }
 
+interface CodeforcesProblem {
+  contestId?: number;
+  index: string;
+  name: string;
+  rating?: number;
+  tags?: string[];
+}
+
+interface CodeforcesSubmission {
+  id: number;
+  contestId?: number;
+  problem: CodeforcesProblem;
+  verdict: string;
+  programmingLanguage: string;
+  timeConsumedMillis: number;
+  memoryConsumedBytes: number;
+  creationTimeSeconds: number;
+}
+
 export default function StopwatchTab() {
+  const { data: session } = useSession();
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
@@ -26,6 +48,8 @@ export default function StopwatchTab() {
   const [problemRating, setProblemRating] = useState('');
   const [problemUrl, setProblemUrl] = useState('');
   const [comments, setComments] = useState('');
+  const [recentProblem, setRecentProblem] = useState<CodeforcesSubmission | null>(null);
+  const [loadingProblems, setLoadingProblems] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
@@ -54,6 +78,51 @@ export default function StopwatchTab() {
     const centiseconds = Math.floor((ms % 1000) / 10);
 
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+  };
+
+  const fetchRecentProblem = async () => {
+    if (!session?.user?.email) {
+      alert('Please log in to fetch Codeforces problem');
+      return;
+    }
+
+    setLoadingProblems(true);
+    try {
+      // First check if user has connected Codeforces account
+      const statusResponse = await fetch('/api/user/codeforces-status');
+      if (!statusResponse.ok) {
+        throw new Error('Failed to check Codeforces connection status');
+      }
+
+      const statusData = await statusResponse.json();
+      if (!statusData.isConnected || !statusData.handle) {
+        alert('Please connect your Codeforces account in the Codeforces tab first');
+        return;
+      }
+
+      // Fetch recent submissions
+      const response = await fetch(`/api/codeforces?handle=${encodeURIComponent(statusData.handle)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch Codeforces data');
+      }
+
+      const data = await response.json();
+      setRecentProblem(data.stats.recentSubmissions?.[0] || null);
+    } catch (error) {
+      console.error('Error fetching recent problems:', error);
+      alert('Failed to fetch recent problems. Please try again.');
+    } finally {
+      setLoadingProblems(false);
+    }
+  };
+
+  const selectProblem = (submission: CodeforcesSubmission) => {
+    setProblemTitle(submission.problem.name);
+    setProblemRating(submission.problem.rating?.toString() || '');
+    const url = submission.contestId
+      ? `https://codeforces.com/contest/${submission.contestId}/problem/${submission.problem.index}`
+      : `https://codeforces.com/problemset/problem/${submission.problem.contestId}/${submission.problem.index}`;
+    setProblemUrl(url);
   };
 
   const handleStart = () => {
@@ -147,6 +216,28 @@ export default function StopwatchTab() {
           <CardDescription>Enter details about the problem you're working on</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Codeforces Problem Fetch */}
+          <div className="flex gap-2">
+            <Button
+              onClick={fetchRecentProblem}
+              disabled={loadingProblems}
+              variant="outline"
+              className="flex-1"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {loadingProblems ? 'Loading...' : 'Fetch Recent Problem'}
+            </Button>
+            {recentProblem && (
+              <Button
+                onClick={() => selectProblem(recentProblem)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Use Recent Problem
+              </Button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="problem-title">Problem Title</Label>

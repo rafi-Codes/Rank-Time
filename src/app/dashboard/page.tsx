@@ -17,22 +17,27 @@ import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 
 export default function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
 
   useEffect(() => {
+    if (status === 'loading') return; // Still loading
     if (!session) {
       router.push('/login');
     }
-  }, [session, router]);
+  }, [session, status, router]);
 
-  if (!session) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (!session) {
+    return null; // Will redirect in useEffect
   }
 
   return (
@@ -47,7 +52,13 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                Welcome, {session.user?.name || session.user?.email}
+                Welcome,{' '}
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                >
+                  {session.user?.name || session.user?.email}
+                </button>
               </span>
               <Button
                 onClick={() => signOut()}
