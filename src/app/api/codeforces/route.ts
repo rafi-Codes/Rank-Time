@@ -64,9 +64,9 @@ export async function GET(request: NextRequest) {
 
     const user: CodeforcesUser = userData.result[0];
 
-    // Fetch user submissions
+    // Fetch user submissions (limit to recent 100 for performance)
     const submissionsResponse = await fetch(
-      `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=10000`,
+      `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=100`,
       {
         headers: {
           'User-Agent': 'RankTime-App/1.0',
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
       memoryLimitExceeded: 0,
       runtimeError: 0,
       compilationError: 0,
+      recentSubmissions: [] as any[],
     };
 
     if (submissionsResponse.ok) {
@@ -123,6 +124,24 @@ export async function GET(request: NextRequest) {
         });
 
         stats.solvedProblems = solvedProblems.size;
+
+        // Get recent submissions (last 20)
+        stats.recentSubmissions = submissions.slice(0, 20).map(submission => ({
+          id: submission.id,
+          contestId: submission.contestId,
+          problem: {
+            contestId: submission.problem.contestId,
+            index: submission.problem.index,
+            name: submission.problem.name,
+            rating: submission.problem.rating,
+            tags: submission.problem.tags,
+          },
+          verdict: submission.verdict,
+          programmingLanguage: submission.programmingLanguage,
+          timeConsumedMillis: submission.timeConsumedMillis,
+          memoryConsumedBytes: submission.memoryConsumedBytes,
+          creationTimeSeconds: submission.creationTimeSeconds,
+        }));
       }
     }
 

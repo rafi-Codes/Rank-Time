@@ -1,12 +1,13 @@
 // src/components/dashboard/CodeforcesTab.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Target, Calendar, TrendingUp, Code, Award } from 'lucide-react';
+import { Trophy, Target, Calendar, TrendingUp, Code, Award, Link, ExternalLink, UserCheck, UserX } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface CodeforcesUser {
   handle: string;
@@ -22,6 +23,25 @@ interface CodeforcesUser {
   lastOnlineTimeSeconds?: number;
 }
 
+interface CodeforcesProblem {
+  contestId?: number;
+  index: string;
+  name: string;
+  rating?: number;
+  tags?: string[];
+}
+
+interface CodeforcesSubmission {
+  id: number;
+  contestId?: number;
+  problem: CodeforcesProblem;
+  verdict: string;
+  programmingLanguage: string;
+  timeConsumedMillis: number;
+  memoryConsumedBytes: number;
+  creationTimeSeconds: number;
+}
+
 interface CodeforcesStats {
   solvedProblems: number;
   totalSubmissions: number;
@@ -31,16 +51,43 @@ interface CodeforcesStats {
   memoryLimitExceeded: number;
   runtimeError: number;
   compilationError: number;
+  recentSubmissions: CodeforcesSubmission[];
 }
 
 export default function CodeforcesTab() {
+  const { data: session } = useSession();
   const [handle, setHandle] = useState('');
   const [userData, setUserData] = useState<CodeforcesUser | null>(null);
   const [stats, setStats] = useState<CodeforcesStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectedHandle, setConnectedHandle] = useState<string | null>(null);
 
-  const fetchCodeforcesData = async () => {
+  useEffect(() => {
+    checkConnectionStatus();
+  }, [session]);
+
+  const checkConnectionStatus = async () => {
+    if (!session?.user?.email) return;
+
+    try {
+      const response = await fetch('/api/user/codeforces-status');
+      if (response.ok) {
+        const data = await response.json();
+        setIsConnected(data.isConnected);
+        setConnectedHandle(data.handle);
+        if (data.isConnected && data.handle) {
+          // Auto-fetch data for connected users
+          fetchCodeforcesData(data.handle);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking connection status:', error);
+    }
+  };
+
+  const connectCodeforces = async () => {
     if (!handle.trim()) {
       setError('Please enter a Codeforces handle');
       return;
@@ -48,11 +95,61 @@ export default function CodeforcesTab() {
 
     setLoading(true);
     setError('');
-    setUserData(null);
-    setStats(null);
 
     try {
-      const response = await fetch(`/api/codeforces?handle=${encodeURIComponent(handle.trim())}`);
+      const response = await fetch('/api/user/connect-codeforces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ handle: handle.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to connect');
+      }
+
+      setIsConnected(true);
+      setConnectedHandle(handle.trim());
+      await fetchCodeforcesData(handle.trim());
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect Codeforces account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const disconnectCodeforces = async () => {
+    try {
+      const response = await fetch('/api/user/disconnect-codeforces', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        setIsConnected(false);
+        setConnectedHandle(null);
+        setUserData(null);
+        setStats(null);
+        setHandle('');
+      }
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
+
+  const fetchCodeforcesData = async (userHandle?: string) => {
+    const targetHandle = userHandle || handle.trim() || connectedHandle;
+    if (!targetHandle) {
+      setError('No handle available');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/codeforces?handle=${encodeURIComponent(targetHandle)}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -89,32 +186,55 @@ export default function CodeforcesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Search Section */}
+      {/* Connection Status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Code className="h-5 w-5" />
             Codeforces Integration
+            {isConnected && <Badge className="bg-green-500 text-white"><UserCheck className="h-3 w-3 mr-1" />Connected</Badge>}
           </CardTitle>
           <CardDescription>
-            Fetch user information and statistics from Codeforces
+            {isConnected 
+              ? `Connected to Codeforces handle: ${connectedHandle}`
+              : 'Connect your Codeforces account to automatically sync data'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Input
-              placeholder="Enter Codeforces handle (e.g., tourist)"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && fetchCodeforcesData()}
-            />
-            <Button
-              onClick={fetchCodeforcesData}
-              disabled={loading}
-            >
-              {loading ? 'Fetching...' : 'Fetch Data'}
-            </Button>
-          </div>
+          {!isConnected ? (
+            <div className="flex gap-4">
+              <Input
+                placeholder="Enter Codeforces handle (e.g., tourist)"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && connectCodeforces()}
+              />
+              <Button
+                onClick={connectCodeforces}
+                disabled={loading}
+              >
+                {loading ? 'Connecting...' : 'Connect Account'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <Button
+                onClick={() => fetchCodeforcesData()}
+                disabled={loading}
+                variant="outline"
+              >
+                {loading ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
+              <Button
+                onClick={disconnectCodeforces}
+                variant="destructive"
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
+            </div>
+          )}
           {error && (
             <p className="text-red-500 text-sm mt-2">{error}</p>
           )}
@@ -242,6 +362,71 @@ export default function CodeforcesTab() {
             </Card>
           )}
         </div>
+      )}
+
+      {/* Recent Submissions */}
+      {stats?.recentSubmissions && stats.recentSubmissions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Recent Submissions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.recentSubmissions.slice(0, 10).map((submission) => (
+                <div key={submission.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{submission.problem.name}</h4>
+                      {submission.problem.contestId && (
+                        <Badge variant="outline">
+                          {submission.problem.contestId}{submission.problem.index}
+                        </Badge>
+                      )}
+                      {submission.problem.rating && (
+                        <Badge variant="secondary">
+                          {submission.problem.rating}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <span>{submission.programmingLanguage}</span>
+                      <span>{new Date(submission.creationTimeSeconds * 1000).toLocaleDateString()}</span>
+                      {submission.contestId && (
+                        <a
+                          href={`https://codeforces.com/contest/${submission.contestId}/problem/${submission.problem.index}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View Problem
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge
+                      className={
+                        submission.verdict === 'OK'
+                          ? 'bg-green-500 text-white'
+                          : submission.verdict === 'WRONG_ANSWER'
+                          ? 'bg-red-500 text-white'
+                          : submission.verdict === 'TIME_LIMIT_EXCEEDED'
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-500 text-white'
+                      }
+                    >
+                      {submission.verdict}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Instructions */}
