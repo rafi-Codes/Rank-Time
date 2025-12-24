@@ -1,7 +1,15 @@
 {
-  "/login/page": "app/login/page.js",
+  "/_not-found": "app/_not-found.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/auth/signup/route": "app/api/auth/signup/route.js",
+  "/api/auth/verify-otp/route": "app/api/auth/verify-otp/route.js",
+  "/api/sessions/graph/route": "app/api/sessions/graph/route.js",
+  "/api/leaderboard/route": "app/api/leaderboard/route.js",
+  "/login/page": "app/login/page.js",
+  "/api/user/stats/route": "app/api/user/stats/route.js",
+  "/api/sessions/route": "app/api/sessions/route.js",
+  "/page": "app/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/register/page": "app/register/page.js",
-  "/api/auth/signup/route": "app/api/auth/signup/route.js"
+  "/api/codeforces/route": "app/api/codeforces/route.js"
 }
