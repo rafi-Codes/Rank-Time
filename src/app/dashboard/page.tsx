@@ -15,6 +15,7 @@ import ProfileTab from '@/components/dashboard/ProfileTab';
 import GraphsTab from '@/components/dashboard/GraphsTab';
 import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
+import SocialTab from '@/components/dashboard/SocialTab';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -45,25 +46,28 @@ export default function Dashboard() {
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                Welcome,{' '}
-                <button
-                  onClick={() => setActiveTab('profile')}
-                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
-                >
-                  {session.user?.name || session.user?.email}
-                </button>
-              </span>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="hidden sm:block">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Welcome,{' '}
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                  >
+                    {session.user?.name || session.user?.email}
+                  </button>
+                </span>
+              </div>
               <Button
                 onClick={() => signOut()}
                 variant="outline"
                 size="sm"
+                className="text-xs sm:text-sm"
               >
                 Sign out
               </Button>
@@ -73,23 +77,24 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Track your competitive programming progress and performance
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="stopwatch">Stopwatch</TabsTrigger>
-            <TabsTrigger value="timer">Timer</TabsTrigger>
-            <TabsTrigger value="tracksheet">Tracksheet</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="graphs">Graphs</TabsTrigger>
-            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            <TabsTrigger value="codeforces">Codeforces</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 h-auto p-1 gap-1">
+            <TabsTrigger value="stopwatch" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Stopwatch</TabsTrigger>
+            <TabsTrigger value="timer" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Timer</TabsTrigger>
+            <TabsTrigger value="tracksheet" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Tracksheet</TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Profile</TabsTrigger>
+            <TabsTrigger value="graphs" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Graphs</TabsTrigger>
+            <TabsTrigger value="leaderboard" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Leaderboard</TabsTrigger>
+            <TabsTrigger value="codeforces" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Codeforces</TabsTrigger>
+            <TabsTrigger value="social" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Social</TabsTrigger>
           </TabsList>
 
           <TabsContent value="stopwatch">
@@ -118,6 +123,10 @@ export default function Dashboard() {
 
           <TabsContent value="codeforces">
             <CodeforcesTab />
+          </TabsContent>
+
+          <TabsContent value="social">
+            <SocialTab />
           </TabsContent>
         </Tabs>
       </div>
