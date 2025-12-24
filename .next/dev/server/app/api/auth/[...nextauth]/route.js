@@ -1,0 +1,10 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/auth/[...nextauth]/route.js")
+R.c("server/chunks/3ae25_next_3a8379b0._.js")
+R.c("server/chunks/3ae25_next-auth_681ea1be._.js")
+R.c("server/chunks/3ae25_openid-client_464ecd1a._.js")
+R.c("server/chunks/3ae25_jose_dist_node_cjs_26a1dfa9._.js")
+R.c("server/chunks/[root-of-the-server]__c5c56bbe._.js")
+R.c("server/chunks/[root-of-the-server]__4bef6486._.js")
+R.c("server/chunks/13dfc__next-internal_server_app_api_auth_[___nextauth]_route_actions_fedd98dd.js")
+R.m("[project]/Rank Time (Vibe)/ranktime/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/Rank Time (Vibe)/ranktime/src/app/api/auth/[...nextauth]/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/Rank Time (Vibe)/ranktime/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/Rank Time (Vibe)/ranktime/src/app/api/auth/[...nextauth]/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

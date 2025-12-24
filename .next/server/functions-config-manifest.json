@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/auth/signup": {},
+    "/api/auth/verify-otp": {},
+    "/api/leaderboard": {},
+    "/api/sessions": {},
+    "/api/sessions/graph": {},
+    "/api/user/stats": {},
+    "/api/users/follow": {},
+    "/api/users/following": {},
+    "/api/users/search": {}
+  }
+}
