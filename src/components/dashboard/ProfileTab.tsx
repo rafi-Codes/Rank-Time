@@ -6,7 +6,8 @@ import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Target, TrendingUp, Calendar, Award, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Trophy, Target, TrendingUp, Calendar, Award, Zap, Shuffle } from 'lucide-react';
 
 interface UserStats {
   user: {
@@ -53,10 +54,31 @@ export default function ProfileTab() {
   const { data: session } = useSession();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [avatarOptions, setAvatarOptions] = useState<string[]>([]);
 
   useEffect(() => {
     fetchUserStats();
+    generateAvatarOptions();
   }, []);
+
+  const generateAvatarOptions = () => {
+    // Generate 6 random avatar options using DiceBear API
+    const options = [];
+    for (let i = 0; i < 6; i++) {
+      const seed = Math.random().toString(36).substring(7);
+      options.push(`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`);
+    }
+    setAvatarOptions(options);
+  };
+
+  const handleAvatarSelect = (avatarUrl: string) => {
+    setSelectedAvatar(avatarUrl);
+    setShowAvatarSelector(false);
+    // Here you could save the selected avatar to the user's profile
+    // For now, we'll just store it in local state
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -126,10 +148,27 @@ export default function ProfileTab() {
       <Card>
         <CardHeader>
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">
-                {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase()}
-              </span>
+            <div className="relative">
+              {selectedAvatar ? (
+                <img
+                  src={selectedAvatar}
+                  alt="Profile Avatar"
+                  className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-700"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">
+                    {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowAvatarSelector(!showAvatarSelector)}
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-xs"
+                title="Change avatar"
+              >
+                <Shuffle className="w-3 h-3" />
+              </button>
             </div>
             <div>
               <CardTitle className="text-2xl">{session?.user?.name || 'User'}</CardTitle>
@@ -147,6 +186,54 @@ export default function ProfileTab() {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Avatar Selector */}
+      {showAvatarSelector && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Choose Your Avatar</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAvatarSelector(false)}
+              >
+                Cancel
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Select from randomly generated avatars or click shuffle to get new options
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-4">
+              {avatarOptions.map((avatar, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAvatarSelect(avatar)}
+                  className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors overflow-hidden"
+                >
+                  <img
+                    src={avatar}
+                    alt={`Avatar option ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-center">
+              <Button
+                onClick={generateAvatarOptions}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <Shuffle className="w-4 h-4" />
+                <span>Shuffle Avatars</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* League Progress */}
       {nextLeague && (

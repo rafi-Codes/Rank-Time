@@ -1,0 +1,10 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/user/stats/route.js")
+R.c("server/chunks/3ae25_next_4f060176._.js")
+R.c("server/chunks/3ae25_next-auth_681ea1be._.js")
+R.c("server/chunks/3ae25_openid-client_464ecd1a._.js")
+R.c("server/chunks/3ae25_jose_dist_node_cjs_26a1dfa9._.js")
+R.c("server/chunks/[root-of-the-server]__c5c56bbe._.js")
+R.c("server/chunks/[root-of-the-server]__e1f54804._.js")
+R.c("server/chunks/5b070_ranktime__next-internal_server_app_api_user_stats_route_actions_ed050514.js")
+R.m("[project]/Rank Time (Vibe)/ranktime/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/Rank Time (Vibe)/ranktime/src/app/api/user/stats/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/Rank Time (Vibe)/ranktime/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/Rank Time (Vibe)/ranktime/src/app/api/user/stats/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

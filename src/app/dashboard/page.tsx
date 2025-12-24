@@ -17,6 +17,61 @@ import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
 
+function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const items = [
+    { label: 'Tracksheet', value: 'tracksheet' },
+    { label: 'Graphs', value: 'graphs' },
+    { label: 'Codeforces', value: 'codeforces' },
+    { label: 'Social', value: 'social' },
+  ];
+
+  return (
+    <div className="inline-block text-left">
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="inline-flex items-center justify-center rounded px-4 py-2 sm:px-6 sm:py-3 bg-white dark:bg-gray-800 border shadow-sm hover:shadow-md transition"
+      >
+        <svg className="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <span className="sr-only">More tabs</span>
+      </button>
+
+      {open && (
+        <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+          <div className="py-1">
+            {items.map((it) => (
+              <button
+                key={it.value}
+                onClick={() => {
+                  onSelect(it.value);
+                  setOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -86,16 +141,23 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 h-auto p-1 gap-1">
-            <TabsTrigger value="stopwatch" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Stopwatch</TabsTrigger>
-            <TabsTrigger value="timer" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Timer</TabsTrigger>
-            <TabsTrigger value="tracksheet" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Tracksheet</TabsTrigger>
-            <TabsTrigger value="profile" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Profile</TabsTrigger>
-            <TabsTrigger value="graphs" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Graphs</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Leaderboard</TabsTrigger>
-            <TabsTrigger value="codeforces" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Codeforces</TabsTrigger>
-            <TabsTrigger value="social" className="text-xs sm:text-sm px-1 py-2 sm:px-3 sm:py-2">Social</TabsTrigger>
-          </TabsList>
+          <div className="relative">
+            <TabsList className="inline-flex h-auto items-center p-2 gap-4 mx-auto justify-center">
+              <TabsTrigger value="stopwatch" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Stopwatch</TabsTrigger>
+              <TabsTrigger value="timer" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Timer</TabsTrigger>
+              <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Profile</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Leaderboard</TabsTrigger>
+            </TabsList>
+
+            {/* More menu for less-used tabs */}
+            <div className="absolute right-0 top-0">
+              <MoreMenu
+                onSelect={(val: string) => {
+                  setActiveTab(val);
+                }}
+              />
+            </div>
+          </div>
 
           <TabsContent value="stopwatch">
             <StopwatchTab />

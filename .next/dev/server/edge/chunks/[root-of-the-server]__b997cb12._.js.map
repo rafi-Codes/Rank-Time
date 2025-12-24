@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/Rank Time (Vibe)/ranktime/src/middleware.ts"],"sourcesContent":["// src/middleware.ts\r\nimport { withAuth } from 'next-auth/middleware';\r\n\r\nexport default withAuth({\r\n  pages: {\r\n    signIn: '/login',\r\n  },\r\n});\r\n\r\nexport const config = {\r\n  matcher: ['/dashboard/:path*'],\r\n};"],"names":[],"mappings":";;;;;;AAAA,oBAAoB;AACpB;;uCAEe,IAAA,oMAAQ,EAAC;IACtB,OAAO;QACL,QAAQ;IACV;AACF;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;KAAoB;AAChC"}}]
+}
