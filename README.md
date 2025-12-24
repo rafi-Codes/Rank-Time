@@ -19,8 +19,8 @@ RankTime is a full-stack web application designed to help **competitive programm
 
 - **Dashboard & Analytics**  
   - Rating vs. Time graph.  
-  - Daily total session time graph.  
-  - Pie chart breakdown of lap types.
+  - Score vs Problem Rating.  
+  - Daily Progress.
 
 - **Data Export**  
   Export session history ("Tracksheet") as Excel/CSV.
@@ -36,7 +36,6 @@ RankTime is a full-stack web application designed to help **competitive programm
 ---
 
 ## 🛠 Tech Stack
-
 - **Frontend:** Next.js, Tailwind CSS, Shadcn/UI  
 - **Backend:** Next.js API routes, MongoDB Atlas  
 - **Auth:** NextAuth.js  
