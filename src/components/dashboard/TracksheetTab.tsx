@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, Trophy, Target } from 'lucide-react';
+import { Calendar, Clock, Trophy, Target, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Session {
   _id: string;
@@ -67,6 +68,55 @@ export default function TracksheetTab() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const exportToCSV = () => {
+    const csvData = filteredSessions.map(session => ({
+      'Date': formatDate(session.createdAt),
+      'Problem Title': session.problemTitle,
+      'Rating': session.problemRating,
+      'Problem URL': session.problemUrl || '',
+      'Total Time': formatTime(session.totalTime),
+      'Score': session.score,
+      'Streak Bonus': session.streakBonus,
+      'Laps': session.laps?.map(lap => `${lap.name}: ${formatTime(lap.time)}`).join(' | ') || '',
+      'Comments': session.comments || ''
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `tracksheet_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToExcel = () => {
+    const excelData = filteredSessions.map(session => ({
+      'Date': formatDate(session.createdAt),
+      'Problem Title': session.problemTitle,
+      'Rating': session.problemRating,
+      'Problem URL': session.problemUrl || '',
+      'Total Time': formatTime(session.totalTime),
+      'Score': session.score,
+      'Streak Bonus': session.streakBonus,
+      'Laps': session.laps?.map(lap => `${lap.name}: ${formatTime(lap.time)}`).join(' | ') || '',
+      'Comments': session.comments || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tracksheet');
+    XLSX.writeFile(workbook, `tracksheet_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const filteredSessions = sessions.filter(session =>
@@ -141,16 +191,43 @@ export default function TracksheetTab() {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search sessions by problem title or rating..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </CardContent>
-      </Card>
+      {/* Search and Export */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <Input
+              placeholder="Search sessions by problem title or rating..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex gap-2">
+              <Button
+                onClick={exportToCSV}
+                variant="outline"
+                className="flex-1"
+                disabled={filteredSessions.length === 0}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={exportToExcel}
+                variant="outline"
+                className="flex-1"
+                disabled={filteredSessions.length === 0}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export Excel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Sessions List */}
       <div className="space-y-4">
