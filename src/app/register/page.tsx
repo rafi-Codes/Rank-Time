@@ -91,6 +91,16 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 p-4">
+        <div className="flex justify-center">
+          <Link href="/" className="flex items-center space-x-2">
+            <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
+            <span className="text-xl font-bold text-gray-900 dark:text-white">RankTime</span>
+          </Link>
+        </div>
+      </div>
+
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md dark:bg-gray-800">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Create an account</h1>

@@ -10,8 +10,8 @@ export default function Home() {
       {/* Navigation */}
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-2
-          ">
+          <div className="flex items-center space-x-2">
+            <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
             <h1 className="text-xl font-bold">RankTime</h1>
           </div>
           <nav className="flex items-center space-x-4">
