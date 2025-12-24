@@ -6,6 +6,8 @@ import connectDB from '@/lib/db';
 import User from '@/models/User';
 import Session from '@/models/Session';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
