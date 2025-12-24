@@ -27,6 +27,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('No user found!');
         }
 
+        if (user.verified === false) {
+          client.close();
+          throw new Error('Email not verified');
+        }
+
         const isValid = await verifyPassword(
           credentials.password,
           user.password

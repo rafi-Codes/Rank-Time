@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db';
+import { generateOtp, sendEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
@@ -28,15 +29,39 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(password);
 
+    // Create user as unverified
     const result = await db.collection('users').insertOne({
       name: name,
       email: email,
       password: hashedPassword,
+      verified: false,
       createdAt: new Date(),
     });
 
+    // Generate OTP and store in separate collection
+    const otp = generateOtp(6);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
+
+    await db.collection('emailOtps').insertOne({
+      userId: result.insertedId,
+      email,
+      otp,
+      expiresAt,
+      createdAt: new Date(),
+    });
+
+    // send OTP email (may throw if SMTP not configured)
+    try {
+      const subject = 'Your RankTime verification code';
+      const text = `Your verification code is: ${otp}. It expires in 10 minutes.`;
+      const html = `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
+      await sendEmail(email, subject, text, html);
+    } catch (err) {
+      console.error('Failed to send OTP email:', err);
+    }
+
     return NextResponse.json(
-      { message: 'Created user!', userId: result.insertedId },
+      { message: 'Created user! OTP sent to email', userId: result.insertedId },
       { status: 201 }
     );
   } catch (error) {
