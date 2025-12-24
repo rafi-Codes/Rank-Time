@@ -8,29 +8,25 @@ if (!process.env.MONGODB_URI) {
 
 const uri = process.env.MONGODB_URI;
 const options = {
-  // Using minimal options to let MongoDB driver handle SSL automatically
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 };
 
-let client;
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+  // eslint-disable-next-line no-var
+  var _mongooseConn: Promise<typeof mongoose> | undefined;
+}
+
+let client = new MongoClient(uri, options);
 let clientPromise: Promise<MongoClient>;
 
-if (process.env.NODE_ENV === 'development') {
-  let globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
-
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
-  }
-  clientPromise = globalWithMongo._mongoClientPromise!;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+if (!global._mongoClientPromise) {
+  global._mongoClientPromise = client.connect();
 }
+clientPromise = global._mongoClientPromise;
 
 export async function connectToDatabase() {
   try {
@@ -42,22 +38,21 @@ export async function connectToDatabase() {
   }
 }
 
-// Mongoose connection for models
-let isConnected = false;
-
+// Mongoose connection for models — cached on global to avoid multiple connections in serverless
 export default async function connectDB() {
-  if (isConnected) {
-    return;
+  if (global._mongooseConn) {
+    return global._mongooseConn;
   }
 
-  try {
-    await mongoose.connect(uri, {
-      // Mongoose handles connection options internally
-    });
-    isConnected = true;
-    console.log('MongoDB connected with Mongoose');
-  } catch (error) {
-    console.error('Mongoose connection error:', error);
-    throw error;
-  }
+  global._mongooseConn = (async () => {
+    try {
+      return await mongoose.connect(uri);
+    } catch (error) {
+      console.error('Mongoose connection error:', error);
+      global._mongooseConn = undefined;
+      throw error;
+    }
+  })();
+
+  return global._mongooseConn;
 }
