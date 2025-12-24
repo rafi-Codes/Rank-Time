@@ -6,6 +6,8 @@ export interface IUser extends Document {
   emailVerified?: Date;
   image?: string;
   codeforcesHandle?: string;
+  usertag: string; // Unique random tag for each user
+  following: mongoose.Types.ObjectId[]; // Array of user IDs this user follows
   totalScore: number;
   currentStreak: number;
   maxStreak: number;
@@ -24,6 +26,8 @@ const UserSchema = new Schema<IUser>(
     emailVerified: { type: Date },
     image: { type: String },
     codeforcesHandle: { type: String },
+    usertag: { type: String, required: true, unique: true },
+    following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     totalScore: { type: Number, default: 0 },
     currentStreak: { type: Number, default: 0 },
     maxStreak: { type: Number, default: 0 },

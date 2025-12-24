@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const { email, otp } = await request.json();

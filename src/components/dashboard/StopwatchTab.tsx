@@ -217,12 +217,12 @@ export default function StopwatchTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Codeforces Problem Fetch */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={fetchRecentProblem}
               disabled={loadingProblems}
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-sm"
             >
               <Download className="w-4 h-4 mr-2" />
               {loadingProblems ? 'Loading...' : 'Fetch Recent Problem'}
@@ -231,7 +231,7 @@ export default function StopwatchTab() {
               <Button
                 onClick={() => selectProblem(recentProblem)}
                 variant="secondary"
-                className="flex-1"
+                className="flex-1 text-sm"
               >
                 Use Recent Problem
               </Button>
@@ -280,32 +280,32 @@ export default function StopwatchTab() {
         <CardContent className="space-y-6">
           {/* Timer Display */}
           <div className="text-center">
-            <div className="text-6xl font-mono font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-4xl sm:text-6xl font-mono font-bold text-blue-600 dark:text-blue-400">
               {formatTime(time)}
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
             {!isRunning ? (
-              <Button onClick={handleStart} size="lg">
+              <Button onClick={handleStart} size="lg" className="w-full sm:w-auto">
                 <Play className="w-4 h-4 mr-2" />
                 Start
               </Button>
             ) : (
-              <Button onClick={handlePause} variant="secondary" size="lg">
+              <Button onClick={handlePause} variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Pause className="w-4 h-4 mr-2" />
                 Pause
               </Button>
             )}
-            <Button onClick={handleReset} variant="outline" size="lg">
+            <Button onClick={handleReset} variant="outline" size="lg" className="w-full sm:w-auto">
               <Square className="w-4 h-4 mr-2" />
               Reset
             </Button>
           </div>
 
           {/* Lap Controls */}
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Label htmlFor="lap-name">Lap Name</Label>
               <Input
@@ -316,7 +316,7 @@ export default function StopwatchTab() {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={handleLap} disabled={!isRunning}>
+              <Button onClick={handleLap} disabled={!isRunning} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Lap
               </Button>

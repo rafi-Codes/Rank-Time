@@ -47,6 +47,39 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
   }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    /* Ensure buttons are touch-friendly */
+    button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Improve text readability on small screens */
+    body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* Better spacing for mobile */
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* Prevent zoom on input focus on iOS */
+  @media screen and (max-width: 767px) {
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer base {

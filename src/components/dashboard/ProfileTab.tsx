@@ -12,6 +12,7 @@ interface UserStats {
   user: {
     name: string;
     email: string;
+    usertag: string;
     totalScore: number;
     currentStreak: number;
     maxStreak: number;
@@ -133,6 +134,9 @@ export default function ProfileTab() {
             <div>
               <CardTitle className="text-2xl">{session?.user?.name || 'User'}</CardTitle>
               <CardDescription>{session?.user?.email}</CardDescription>
+              <div className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">
+                @{stats.user.usertag}
+              </div>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge className={`${LEAGUE_COLORS[stats.user.league as keyof typeof LEAGUE_COLORS] || 'bg-gray-500'} text-white`}>
                   {stats.user.league.charAt(0).toUpperCase() + stats.user.league.slice(1)}

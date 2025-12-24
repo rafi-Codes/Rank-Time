@@ -1,1 +1,0 @@
-{"version":1,"functions":{"/api/auth/[...nextauth]":{},"/api/sessions/graph":{},"/api/codeforces":{},"/api/leaderboard":{},"/api/sessions":{},"/api/user/codeforces-status":{},"/api/user/connect-codeforces":{},"/api/user/disconnect-codeforces":{},"/api/user/stats":{}}}

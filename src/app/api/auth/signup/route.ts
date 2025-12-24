@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db';
 import { generateOtp, sendEmail } from '@/lib/email';
+import { generateUserTag } from '@/lib/utils';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -29,13 +33,36 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(password);
 
+    // Generate unique usertag
+    let usertag;
+    let attempts = 0;
+    do {
+      usertag = generateUserTag();
+      attempts++;
+      if (attempts > 10) {
+        return NextResponse.json(
+          { message: 'Failed to generate unique usertag. Please try again.' },
+          { status: 500 }
+        );
+      }
+    } while (await db.collection('users').findOne({ usertag }));
+
     // Create user as unverified
     const result = await db.collection('users').insertOne({
       name: name,
       email: email,
       password: hashedPassword,
+      usertag: usertag,
       verified: false,
+      totalScore: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      league: 'bronze',
+      rank: 0,
+      totalSessions: 0,
+      following: [],
       createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     // Generate OTP and store in separate collection

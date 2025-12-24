@@ -5,6 +5,7 @@ import User from '@/models/User';
 import Session from '@/models/Session';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
