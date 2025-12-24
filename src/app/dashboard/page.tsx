@@ -16,6 +16,7 @@ import GraphsTab from '@/components/dashboard/GraphsTab';
 import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
+import { ModeToggle } from '@/components/mode-toggle';
 
 function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -150,7 +151,8 @@ export default function Dashboard() {
             </TabsList>
 
             {/* More menu for less-used tabs */}
-            <div className="absolute right-0 top-0">
+            <div className="absolute right-0 top-0 flex items-center space-x-2">
+              <ModeToggle />
               <MoreMenu
                 onSelect={(val: string) => {
                   setActiveTab(val);
