@@ -18,6 +18,11 @@ export const authOptions: NextAuthOptions = {
 
         let client;
         try {
+          if (process.env.DEBUG_AUTH === 'true') {
+            // do not log passwords
+            // eslint-disable-next-line no-console
+            console.debug('Authorize attempt for:', { email: credentials.email });
+          }
           client = await connectToDatabase();
           const db = client.db();
 
@@ -25,6 +30,10 @@ export const authOptions: NextAuthOptions = {
             email: credentials.email,
           });
 
+          if (process.env.DEBUG_AUTH === 'true') {
+            // eslint-disable-next-line no-console
+            console.debug('User lookup result:', !!user);
+          }
           if (!user) {
             throw new Error('No user found!');
           }
@@ -97,23 +106,38 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
-      if (account) {
-        token.accessToken = account.access_token;
+      try {
+        // Persist the OAuth access_token and or the user id to the token right after signin
+        if (account) {
+          token.accessToken = account.access_token;
+        }
+        if (user) {
+          token.id = user.id;
+          token.picture = user.image;
+        }
+        return token;
+      } catch (err) {
+        console.error('NextAuth jwt callback error:', err);
+        throw err;
       }
-      if (user) {
-        token.id = user.id;
-        token.picture = user.image;
-      }
-      return token;
     },
     async session({ session, token }) {
-      // Send properties to the client, like an access_token and user id from a provider
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.image = token.picture as string;
+      try {
+        // Send properties to the client, like an access_token and user id from a provider
+        if (token) {
+          // protect against unexpected shapes
+          try {
+            session.user.id = (token as any).id as string;
+            session.user.image = (token as any).picture as string;
+          } catch (inner) {
+            console.warn('Unable to attach token props to session:', inner);
+          }
+        }
+        return session;
+      } catch (err) {
+        console.error('NextAuth session callback error:', err);
+        throw err;
       }
-      return session;
     },
   },
   pages: {
