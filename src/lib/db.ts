@@ -66,3 +66,16 @@ export default async function connectDB() {
 
   return global._mongooseConn;
 }
+
+// Initialize challenge scheduler when DB module is loaded
+try {
+  // import lazily to avoid cyclic imports during build
+  const { initChallengeScheduler } = require('./challengeScheduler');
+  if (initChallengeScheduler) {
+    initChallengeScheduler();
+  }
+} catch (err) {
+  // Scheduler initialization failures should not break DB connection
+  // Log for debugging
+  // console.error('Failed to initialize challenge scheduler:', err);
+}
