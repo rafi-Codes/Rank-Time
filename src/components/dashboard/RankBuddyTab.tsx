@@ -68,6 +68,37 @@ interface BadgeData {
   progressPercentage?: number;
 }
 
+interface SessionData {
+  _id: string;
+  problemName: string;
+  problemRating: number;
+  laps: number;
+  totalTime: number;
+  score: number;
+  streakBonus: number;
+  comments: string;
+  createdAt: string;
+}
+
+interface ReplayData {
+  session: SessionData;
+  analysis: {
+    aiAnalysis: string;
+    insights: {
+      timeEfficiency: string;
+      difficultyMatch: string;
+      progressTrend: string;
+      recommendations: string[];
+    };
+    metrics: {
+      avgTimePerLap: number;
+      baseScore: number;
+      ratingProgress: number;
+      performanceLevel: string;
+    };
+  };
+}
+
 interface ImprovementData {
   recommendations: Array<{
     type: string;
@@ -107,11 +138,16 @@ export default function RankBuddyTab() {
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [heatmapStats, setHeatmapStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [replayData, setReplayData] = useState<ReplayData | null>(null);
+  const [replayLoading, setReplayLoading] = useState(false);
 
   useEffect(() => {
     loadUserData();
     loadChallenges();
     loadBadges();
+    loadSessions();
     initializeChat();
   }, []);
 
@@ -161,6 +197,36 @@ export default function RankBuddyTab() {
       }
     } catch (error) {
       console.error('Error loading badges:', error);
+    }
+  };
+
+  const loadSessions = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      if (response.ok) {
+        const data = await response.json();
+        setSessions(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setSessions([]);
+    }
+  };
+
+  const loadReplayData = async (sessionId: string) => {
+    try {
+      setReplayLoading(true);
+      const response = await fetch(`/api/sessions/replay?sessionId=${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setReplayData(data);
+      } else {
+        console.error('Error loading replay data');
+      }
+    } catch (error) {
+      console.error('Error loading replay data:', error);
+    } finally {
+      setReplayLoading(false);
     }
   };
 
@@ -524,7 +590,7 @@ export default function RankBuddyTab() {
             <div className="space-y-4">
               {/* Recommendations */}
               <div className="space-y-3">
-                {improvementData.recommendations.map((rec, index) => (
+                {improvementData.recommendations.map((rec: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low'; action: string }, index: number) => (
                   <div key={index} className={`p-4 rounded-lg border-l-4 ${
                     rec.priority === 'high' ? 'border-l-red-500 bg-red-50 dark:bg-red-900/20' :
                     rec.priority === 'medium' ? 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' :
@@ -538,12 +604,12 @@ export default function RankBuddyTab() {
               </div>
 
               {/* Next Steps */}
-              {improvementData.nextSteps.map((step, index) => (
+              {improvementData.nextSteps.map((step: { title: string; description: string; items: Array<{ id?: string; title: string; difficulty?: string; deadline?: Date; type?: string }> }, index: number) => (
                 <div key={index} className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">{step.title}</h4>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">{step.description}</p>
                   <ul className="space-y-2">
-                    {step.items.map((item, itemIndex) => (
+                    {step.items.map((item: { id?: string; title: string; difficulty?: string; deadline?: Date; type?: string }, itemIndex: number) => (
                       <li key={itemIndex} className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-blue-700 dark:text-blue-300">{item.title}</span>
@@ -581,28 +647,205 @@ export default function RankBuddyTab() {
 
   const renderReplayView = () => (
     <div className="space-y-6">
+      {/* Session List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-6 w-6 text-indigo-600" />
-            <span>Session Replay</span>
+            <span>Session History</span>
           </CardTitle>
           <CardDescription>
-            Review your past coding sessions with detailed explanations
+            Select a past session to review with AI-powered analysis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">Session replay feature coming soon...</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Review past attempts with AI-powered explanations
-              </p>
+          {(sessions || []).length > 0 ? (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {(sessions || []).map((session) => (
+                <div
+                  key={session._id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedSession === session._id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
+                  }`}
+                  onClick={() => {
+                    setSelectedSession(session._id);
+                    loadReplayData(session._id);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        {session.problemName}
+                      </h4>
+                      <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                        <span className="flex items-center space-x-1">
+                          <Target className="h-3 w-3" />
+                          <span>Rating: {session.problemRating}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{Math.floor(session.totalTime / 60)}m {session.totalTime % 60}s</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Zap className="h-3 w-3" />
+                          <span>{session.laps} laps</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Star className="h-3 w-3" />
+                          <span>{session.score} pts</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">
+                        {new Date(session.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(session.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                  {session.comments && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">
+                      "{session.comments}"
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <Calendar className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500">No sessions found</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Complete some coding sessions to see them here!
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Replay Analysis */}
+      {selectedSession && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Lightbulb className="h-6 w-6 text-yellow-600" />
+              <span>Session Analysis</span>
+            </CardTitle>
+            <CardDescription>
+              AI-powered insights and recommendations for your performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {replayLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+                  <p className="text-gray-500">Analyzing session...</p>
+                </div>
+              </div>
+            ) : replayData ? (
+              <div className="space-y-6">
+                {/* Session Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-lg font-bold text-blue-600">{replayData.session.problemRating}</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">Problem Rating</p>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-lg font-bold text-green-600">{Math.floor(replayData.session.totalTime / 60)}:{(replayData.session.totalTime % 60).toString().padStart(2, '0')}</p>
+                    <p className="text-xs text-green-700 dark:text-green-300">Total Time</p>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <p className="text-lg font-bold text-purple-600">{replayData.session.laps}</p>
+                    <p className="text-xs text-purple-700 dark:text-purple-300">Attempts</p>
+                  </div>
+                  <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <p className="text-lg font-bold text-orange-600">{replayData.session.score}</p>
+                    <p className="text-xs text-orange-700 dark:text-orange-300">Final Score</p>
+                  </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-lg font-bold">{replayData.analysis.metrics.avgTimePerLap}s</p>
+                    <p className="text-xs text-gray-500">Avg Time/Lap</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-lg font-bold">{replayData.analysis.metrics.ratingProgress > 0 ? '+' : ''}{replayData.analysis.metrics.ratingProgress}</p>
+                    <p className="text-xs text-gray-500">Rating Progress</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-lg font-bold capitalize">{replayData.analysis.metrics.performanceLevel}</p>
+                    <p className="text-xs text-gray-500">Performance</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-lg font-bold capitalize">{replayData.analysis.insights.progressTrend}</p>
+                    <p className="text-xs text-gray-500">Trend</p>
+                  </div>
+                </div>
+
+                {/* AI Analysis */}
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-4 rounded-lg">
+                  <h4 className="font-medium text-indigo-800 dark:text-indigo-200 mb-2 flex items-center space-x-2">
+                    <Bot className="h-4 w-4" />
+                    <span>AI Analysis</span>
+                  </h4>
+                  <p className="text-sm text-indigo-700 dark:text-indigo-300 leading-relaxed">
+                    {replayData.analysis.aiAnalysis}
+                  </p>
+                </div>
+
+                {/* Insights */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-gray-900 dark:text-white">Key Insights</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">Time Efficiency: <span className="capitalize">{replayData.analysis.insights.timeEfficiency}</span></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Target className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">Difficulty Match: <span className="capitalize">{replayData.analysis.insights.difficultyMatch.replace('_', ' ')}</span></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm">Progress Trend: <span className="capitalize">{replayData.analysis.insights.progressTrend}</span></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-gray-900 dark:text-white">Recommendations</h4>
+                    <ul className="space-y-1">
+                      {replayData.analysis.insights.recommendations.map((rec, index) => (
+                        <li key={index} className="flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <Lightbulb className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">Select a session to view analysis</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 
