@@ -660,6 +660,10 @@ body {
   width: 100%;
 }
 
+.w-auto {
+  width: auto;
+}
+
 .min-w-\[8rem\] {
   min-width: 8rem;
 }
