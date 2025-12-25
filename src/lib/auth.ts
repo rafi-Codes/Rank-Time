@@ -71,7 +71,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false, // Set to false for localhost development
+        secure: process.env.NODE_ENV === 'production', // true in production, false in development
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         sameSite: 'lax',
         path: '/',
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60,
       },
     },
@@ -90,7 +90,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60,
       },
     },
