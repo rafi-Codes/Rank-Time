@@ -11,8 +11,8 @@ export default function Home() {
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center space-x-2">
-            <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-            <h1 className="text-xl font-bold">RankTime</h1>
+            <img src="/logo.svg" alt="Rank Time Logo" className="h-8 w-8" />
+            <h1 className="text-xl font-bold">Rank Time</h1>
           </div>
           <nav className="flex items-center space-x-4">
             <Link href="/login" className="text-sm font-medium hover:underline">
@@ -29,7 +29,7 @@ export default function Home() {
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                RankTime
+                Rank Time
               </span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">

@@ -227,6 +227,14 @@ export default function Dashboard() {
             <SocialTab />
           </TabsContent>
         </Tabs>
+
+        {/* Footer */}
+        <footer className="mt-12 py-8 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+            <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
+            <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
+          </div>
+        </footer>
       </div>
     </div>
   );
