@@ -16,6 +16,7 @@ import GraphsTab from '@/components/dashboard/GraphsTab';
 import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
+import RankBuddyTab from '@/components/dashboard/RankBuddyTab';
 import { ModeToggle } from '@/components/mode-toggle';
 
 function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
@@ -42,7 +43,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
         type="button"
         onClick={() => setOpen((s) => !s)}
         aria-haspopup="true"
-        aria-expanded={open}
+        aria-expanded={open ? 'true' : 'false'}
         className="inline-flex items-center justify-center rounded px-4 py-2 sm:px-6 sm:py-3 bg-white dark:bg-gray-800 border shadow-sm hover:shadow-md transition"
       >
         <svg className="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -176,6 +177,7 @@ export default function Dashboard() {
               <TabsTrigger value="timer" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Timer</TabsTrigger>
               <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Profile</TabsTrigger>
               <TabsTrigger value="leaderboard" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Leaderboard</TabsTrigger>
+              <TabsTrigger value="rankbuddy" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Rank Buddy</TabsTrigger>
             </TabsList>
 
             {/* More menu for less-used tabs */}
@@ -211,6 +213,10 @@ export default function Dashboard() {
 
           <TabsContent value="leaderboard">
             <LeaderboardTab />
+          </TabsContent>
+
+          <TabsContent value="rankbuddy">
+            <RankBuddyTab />
           </TabsContent>
 
           <TabsContent value="codeforces">

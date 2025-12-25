@@ -84,6 +84,25 @@ Create a `.env.local` file with the following values:
 - MONGODB_URI=your_mongodb_connection_string
 - NEXTAUTH_SECRET=your_secret_key
 - NEXTAUTH_URL=http://localhost:3000
+- OPENAI_API_KEY=your_openai_api_key (optional - for enhanced Rank Buddy AI chat)
+
+## 🤖 Rank Buddy AI Setup
+Rank Buddy uses AI to provide coding hints and guidance. For the best experience:
+
+1. **Get OpenAI API Key** (recommended):
+   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Create a new API key
+   - Add it to your `.env.local`: `OPENAI_API_KEY=your_key_here`
+
+2. **Without API Key**:
+   - Rank Buddy will use free Hugging Face models
+   - Responses may be less intelligent but still helpful
+   - No cost, but potentially generic responses
+
+The chat interface will show badges indicating which AI provider is responding:
+- 🟢 **GPT**: OpenAI GPT-3.5-turbo (best quality)
+- 🔵 **AI**: Hugging Face models
+- ⚪ **Basic**: Fallback responses
 
 ---
 

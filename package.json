@@ -10,6 +10,8 @@
     "test-db": "node test-db.js"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "@openrouter/sdk": "^0.3.10",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-progress": "^1.1.8",
@@ -26,6 +28,7 @@
     "next-auth": "^4.24.13",
     "next-themes": "^0.2.1",
     "nodemailer": "^7.0.12",
+    "@openrouter/sdk": "^0.3.10",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "recharts": "^2.15.4",
