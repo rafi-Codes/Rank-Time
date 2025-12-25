@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test-db": "node test-db.js"
+    "test-db": "node test-db.js",
+    "test-email": "node test-email.js",
+    "test-email-send": "node test-email-send.js",
+    "test-openrouter": "node test-openrouter.js",
+    "test-rankbuddy": "node test-rankbuddy.js"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -27,8 +31,7 @@
     "next": "^16.1.1",
     "next-auth": "^4.24.13",
     "next-themes": "^0.2.1",
-    "nodemailer": "^7.0.12",
-    "@openrouter/sdk": "^0.3.10",
+    "node-mailjet": "^6.0.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "recharts": "^2.15.4",
@@ -42,7 +45,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.19.27",
-    "@types/nodemailer": "^7.0.4",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "@types/xlsx": "^0.0.35",

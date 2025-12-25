@@ -84,7 +84,109 @@ Create a `.env.local` file with the following values:
 - MONGODB_URI=your_mongodb_connection_string
 - NEXTAUTH_SECRET=your_secret_key
 - NEXTAUTH_URL=http://localhost:3000
-- OPENAI_API_KEY=your_openai_api_key (optional - for enhanced Rank Buddy AI chat)
+- OPENROUTER_API_KEY=your_openrouter_api_key (required for Rank Buddy AI chat)
+- MAILJET_API_KEY=your_mailjet_api_key
+- MAILJET_SECRET_KEY=your_mailjet_secret_key
+- FROM_EMAIL=noreply@yourdomain.com
+- FROM_NAME=RankTime
+
+## 🤖 Rank Buddy AI Setup (Required for AI Chat)
+
+Rank Buddy uses AI to provide coding hints and guidance. You need an OpenRouter API key:
+
+1. **Create OpenRouter Account**:
+   - Sign up at [OpenRouter.ai](https://openrouter.ai/)
+   - Add credits to your account (minimum $5 recommended)
+
+2. **Get API Key**:
+   - Go to [API Keys](https://openrouter.ai/keys)
+   - Create a new API key
+   - Copy the key (starts with `sk-or-v1-`)
+
+3. **Update `.env.local`**:
+   ```
+   OPENROUTER_API_KEY=sk-or-v1-your-actual-key-here
+   ```
+
+4. **Test the Integration**:
+   ```bash
+   npm run test-openrouter
+   ```
+
+**Note**: Without a valid OpenRouter API key, Rank Buddy will return fallback responses instead of AI-generated guidance.
+
+## 📧 Email Setup (Required for OTP Verification)
+
+RankTime uses email OTP verification for user registration. We recommend using **Mailjet** for reliable email delivery.
+
+### Using Mailjet API (Recommended)
+
+1. **Create a Mailjet Account**:
+   - Sign up at [Mailjet](https://www.mailjet.com/)
+   - Verify your account and domain
+
+2. **Get API Keys**:
+   - Go to [API Keys](https://app.mailjet.com/account/api_keys)
+   - Copy your API Key and Secret Key
+
+3. **Update `.env.local`**:
+   ```
+   MAILJET_API_KEY=your-api-key-here
+   MAILJET_SECRET_KEY=your-secret-key-here
+   FROM_EMAIL=your-verified-sender@yourdomain.com
+   FROM_NAME=RankTime
+   ```
+
+4. **Verify Your Domain** (for production):
+   - In Mailjet dashboard, go to Sender Addresses
+   - Add and verify your domain for better deliverability
+
+**Note**: Without proper email configuration, OTP emails will not be sent, but the registration process will still work (users can register but won't receive verification codes).
+
+### Testing Integrations
+
+#### Email Testing
+After configuring your email settings, you can test the integration:
+
+1. **Check email configuration**:
+   ```bash
+   npm run test-email
+   ```
+
+2. **Test actual email sending**:
+   ```bash
+   npm run test-email-send
+   ```
+   *Note: Update the email address in `test-email-send.js` to your actual email for testing*
+
+3. **Using the API endpoint** (when server is running):
+   ```bash
+   curl -X POST http://localhost:3000/api/test-email \
+     -H "Content-Type: application/json" \
+     -d '{"email":"your-test-email@example.com"}'
+   ```
+
+#### AI Testing
+Test the Rank Buddy AI integration:
+
+1. **Test OpenRouter API connection**:
+   ```bash
+   npm run test-openrouter
+   ```
+
+2. **Test Rank Buddy chat functionality**:
+   ```bash
+   npm run test-rankbuddy
+   ```
+
+3. **Test Rank Buddy chat** (when server is running):
+   - Start the app: `npm run dev`
+   - Go to Rank Buddy tab and send a message
+
+4. **Test registration flow**:
+   - Start the app: `npm run dev`
+   - Try registering a new user
+   - Check your email for the OTP
 
 ## 🤖 Rank Buddy AI Setup
 Rank Buddy uses AI to provide coding hints and guidance. For the best experience:
