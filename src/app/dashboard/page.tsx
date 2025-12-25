@@ -43,7 +43,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
         type="button"
         onClick={() => setOpen((s) => !s)}
         aria-haspopup="true"
-        aria-expanded={open ? 'true' : 'false'}
+        aria-expanded={open}
         className="inline-flex items-center justify-center rounded px-4 py-2 sm:px-6 sm:py-3 bg-white dark:bg-gray-800 border shadow-sm hover:shadow-md transition"
       >
         <svg className="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,10 +117,10 @@ export default function Dashboard() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <img src="/logo.svg" alt="RankTime Logo" className="h-10 w-10" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
-            </div>
+              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('stopwatch')}>
+                <img src="/logo.svg" alt="RankTime Logo" className="h-10 w-10" />
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
+              </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden sm:block">
                 <div className="flex items-center space-x-2">
