@@ -52,8 +52,6 @@ The Rank Buddy chat feature now uses OpenRouter's AI API instead of local implem
 - ✅ **Educational Filtering**: Removes any code blocks or inline code from responses
 
 ## Previous Implementations Removed
-
-- ❌ Meta AI Python service
 - ❌ Replicate API integration
 - ❌ Local fallback AI responses
 
