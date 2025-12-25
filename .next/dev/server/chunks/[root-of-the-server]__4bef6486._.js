@@ -216,7 +216,8 @@ const authOptions = {
                     return {
                         id: user._id.toString(),
                         email: user.email,
-                        name: user.name
+                        name: user.name,
+                        image: user.image
                     };
                 } catch (error) {
                     console.error('Auth error:', error);
@@ -273,6 +274,7 @@ const authOptions = {
             }
             if (user) {
                 token.id = user.id;
+                token.picture = user.image;
             }
             return token;
         },
@@ -280,6 +282,7 @@ const authOptions = {
             // Send properties to the client, like an access_token and user id from a provider
             if (token) {
                 session.user.id = token.id;
+                session.user.image = token.picture;
             }
             return session;
         }
