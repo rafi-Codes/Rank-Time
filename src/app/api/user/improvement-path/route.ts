@@ -5,226 +5,249 @@ import dbConnect from '@/lib/db';
 import UserActivity from '@/models/UserActivity';
 import Challenge from '@/models/Challenge';
 import Badge from '@/models/Badge';
+import Session from '@/models/Session';
+import User from '@/models/User';
+import { OpenRouter } from '@openrouter/sdk';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
 
-    // Analyze user's activity patterns
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Gather comprehensive user performance data
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     // Get recent activities
     const recentActivities = await UserActivity.find({
-      userId: session.user.id,
+      userId: user._id,
       createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 });
 
-    // Get challenge completion stats
+    // Get challenge stats
     const challengeStats = await Challenge.aggregate([
-      { $match: { userId: session.user.id, completed: true } },
+      { $match: { userId: user._id } },
       {
         $group: {
-          _id: '$category',
-          count: { $sum: 1 },
-          avgTime: { $avg: '$estimatedTime' },
-          difficulties: { $push: '$difficulty' }
+          _id: null,
+          totalCompleted: { $sum: { $cond: ['$completed', 1, 0] } },
+          totalActive: { $sum: { $cond: [{ $and: ['$completed', false, { $gte: ['$deadline', new Date()] }] }, 1, 0] } },
+          categories: { $addToSet: '$category' },
+          difficulties: { $push: '$difficulty' },
+          avgPoints: { $avg: { $add: ['$points', '$bonusPoints'] } }
         }
       }
     ]);
 
     // Get earned badges
     const earnedBadges = await Badge.find({
-      userId: session.user.id,
+      userId: user._id,
       earned: true
     });
 
-    // Analyze patterns and generate recommendations
-    const recommendations = await generateRecommendations(
+    // Get recent sessions
+    const recentSessions = await Session.find({
+      userId: user._id,
+      createdAt: { $gte: thirtyDaysAgo }
+    }).sort({ createdAt: -1 }).limit(10);
+
+    // Generate AI-powered improvement path
+    const improvementPath = await generateAIImprovementPath(
+      user,
       recentActivities,
-      challengeStats,
-      earnedBadges
+      challengeStats[0] || {},
+      earnedBadges,
+      recentSessions
     );
 
-    // Generate next steps
-    const nextSteps = await generateNextSteps(recommendations, session.user.id);
-
-    return NextResponse.json({
-      recommendations,
-      nextSteps,
-      insights: {
-        totalActivities: recentActivities.length,
-        categoriesWorked: challengeStats.length,
-        badgesEarned: earnedBadges.length,
-        consistency: calculateConsistency(recentActivities)
-      }
-    });
+    return NextResponse.json(improvementPath);
   } catch (error) {
     console.error('Error generating improvement path:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-async function generateRecommendations(
+async function generateAIImprovementPath(
+  user: any,
   activities: any[],
-  challengeStats: any[],
-  earnedBadges: any[]
+  challengeStats: any,
+  badges: any[],
+  sessions: any[]
 ) {
-  const recommendations = [];
-
-  // Analyze activity frequency
-  const activityFrequency = activities.length / 30; // activities per day
-
-  if (activityFrequency < 0.5) {
-    recommendations.push({
-      type: 'consistency',
-      title: 'Build Consistent Practice Habits',
-      description: 'You\'re practicing less than once every two days. Try to code daily, even if just for 30 minutes.',
-      priority: 'high',
-      action: 'Set daily coding reminders and start with small, achievable goals.'
+  try {
+    // Initialize OpenRouter
+    const openRouter = new OpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
     });
-  } else if (activityFrequency >= 1) {
-    recommendations.push({
-      type: 'consistency',
-      title: 'Great Consistency!',
-      description: 'You\'re practicing daily - keep up the excellent work!',
-      priority: 'low',
-      action: 'Consider increasing session length or difficulty to continue progressing.'
-    });
+
+    // Prepare performance data for AI analysis
+    const performanceData = {
+      userInfo: {
+        name: user.name || 'User',
+        joinDate: user.createdAt,
+        totalActivities: activities.length,
+        totalBadges: badges.length
+      },
+      recentActivity: {
+        last30Days: activities.length,
+        consistency: calculateConsistency(activities),
+        categories: Array.from(new Set(activities.map(a => a.metadata?.category).filter(Boolean))),
+        pointsEarned: activities.reduce((sum, a) => sum + (a.points || 0), 0)
+      },
+      challenges: {
+        totalCompleted: challengeStats.totalCompleted || 0,
+        activeChallenges: challengeStats.totalActive || 0,
+        categories: challengeStats.categories || [],
+        avgPoints: Math.round(challengeStats.avgPoints || 0),
+        difficultyDistribution: challengeStats.difficulties?.reduce((acc: any, diff: string) => {
+          acc[diff] = (acc[diff] || 0) + 1;
+          return acc;
+        }, {}) || {}
+      },
+      badges: badges.map(b => ({
+        name: b.badgeId,
+        earnedAt: b.earnedAt
+      })),
+      sessions: sessions.slice(0, 5).map(s => ({
+        date: s.createdAt,
+        duration: s.duration,
+        problemsSolved: s.problemsSolved?.length || 0,
+        rating: s.rating
+      }))
+    };
+
+    // Create AI prompt
+    const prompt = `
+You are an expert competitive programming coach. Analyze this user's performance data and provide personalized improvement recommendations.
+
+User Performance Data:
+${JSON.stringify(performanceData, null, 2)}
+
+Based on this data, provide a comprehensive improvement path with:
+
+1. **Current Strengths**: What they're doing well
+2. **Areas for Improvement**: Key weaknesses to address
+3. **Personalized Recommendations**: Specific, actionable advice
+4. **Next Steps**: Concrete goals for the next 1-2 weeks
+5. **Long-term Strategy**: 1-3 month improvement plan
+
+Format your response as a JSON object with these keys:
+{
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "recommendations": [
+    {
+      "title": "string",
+      "description": "string",
+      "priority": "high|medium|low",
+      "action": "string"
+    }
+  ],
+  "nextSteps": [
+    {
+      "title": "string",
+      "description": "string",
+      "items": [
+        {
+          "title": "string",
+          "type": "goal|challenge|practice"
+        }
+      ]
+    }
+  ],
+  "longTermStrategy": ["string"],
+  "insights": {
+    "consistency": number (0-100),
+    "progressRate": "slow|moderate|fast",
+    "focusAreas": ["string"]
   }
-
-  // Analyze category diversity
-  const categories = challengeStats.map(stat => stat._id);
-  if (categories.length < 3) {
-    recommendations.push({
-      type: 'diversity',
-      title: 'Explore New Problem Types',
-      description: `You've worked on ${categories.length} categories. Try exploring other areas like graphs, dynamic programming, or string algorithms.`,
-      priority: 'medium',
-      action: 'Look for challenges in underrepresented categories to build well-rounded skills.'
-    });
-  }
-
-  // Analyze difficulty progression
-  const difficultyCount = challengeStats.reduce((acc, stat) => {
-    stat.difficulties.forEach((diff: string) => {
-      acc[diff] = (acc[diff] || 0) + 1;
-    });
-    return acc;
-  }, {});
-
-  const hardChallenges = difficultyCount.hard || 0;
-  const mediumChallenges = difficultyCount.medium || 0;
-
-  if (hardChallenges < mediumChallenges * 0.3) {
-    recommendations.push({
-      type: 'difficulty',
-      title: 'Challenge Yourself More',
-      description: 'You\'re mostly solving medium difficulty problems. Try harder challenges to accelerate your growth.',
-      priority: 'medium',
-      action: 'Start incorporating more hard difficulty problems into your practice routine.'
-    });
-  }
-
-  // Badge-based recommendations
-  const badgeCategories = earnedBadges.map(badge => badge.category);
-  if (!badgeCategories.includes('streak')) {
-    recommendations.push({
-      type: 'streak',
-      title: 'Build a Streak',
-      description: 'Consistent daily practice leads to better retention and faster improvement.',
-      priority: 'high',
-      action: 'Aim for a 7-day coding streak to earn your first streak badge.'
-    });
-  }
-
-  // Time-based analysis
-  const avgSessionTime = activities.reduce((sum, activity) => {
-    // Estimate session time from activity patterns
-    return sum + 30; // Rough estimate
-  }, 0) / activities.length;
-
-  if (avgSessionTime < 45) {
-    recommendations.push({
-      type: 'focus',
-      title: 'Increase Session Length',
-      description: 'Longer, focused sessions lead to deeper understanding and better problem-solving skills.',
-      priority: 'medium',
-      action: 'Try extending your coding sessions to 60+ minutes for more meaningful progress.'
-    });
-  }
-
-  return recommendations;
 }
 
-async function generateNextSteps(recommendations: any[], userId: string) {
-  const nextSteps = [];
+Be specific, encouraging, and realistic. Tailor advice to their current level and patterns.
+`;
 
-  // Get user's current challenge progress
-  const activeChallenges = await Challenge.find({
-    userId,
-    completed: false,
-    deadline: { $gte: new Date() }
-  }).limit(3);
-
-  if (activeChallenges.length > 0) {
-    nextSteps.push({
-      title: 'Complete Active Challenges',
-      description: `You have ${activeChallenges.length} active challenges waiting.`,
-      items: activeChallenges.map(challenge => ({
-        id: challenge._id,
-        title: challenge.title,
-        difficulty: challenge.difficulty,
-        deadline: challenge.deadline
-      }))
+    // Call OpenRouter
+    const completion = await openRouter.chat.send({
+      model: 'anthropic/claude-3-haiku',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      maxTokens: 2000
     });
+
+    const aiResponse = completion.choices[0]?.message?.content;
+    if (!aiResponse || typeof aiResponse !== 'string') {
+      throw new Error('No valid response from AI');
+    }
+
+    // Parse AI response
+    let improvementPath;
+    try {
+      improvementPath = JSON.parse(aiResponse);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', aiResponse);
+      // Fallback to basic recommendations
+      improvementPath = {
+        strengths: ['Active participation'],
+        weaknesses: ['Need more analysis'],
+        recommendations: [{
+          title: 'Continue practicing',
+          description: 'Keep up the good work',
+          priority: 'medium',
+          action: 'Practice regularly'
+        }],
+        nextSteps: [{
+          title: 'Daily practice',
+          description: 'Code every day',
+          items: [{ title: 'Solve one problem daily', type: 'goal' }]
+        }],
+        longTermStrategy: ['Build consistency'],
+        insights: {
+          consistency: calculateConsistency(activities),
+          progressRate: 'moderate',
+          focusAreas: ['consistency']
+        }
+      };
+    }
+
+    return improvementPath;
+  } catch (error) {
+    console.error('AI improvement path generation error:', error);
+    // Return fallback response
+    return {
+      strengths: ['Showing interest in improvement'],
+      weaknesses: ['AI analysis temporarily unavailable'],
+      recommendations: [{
+        title: 'Continue regular practice',
+        description: 'Keep solving problems consistently',
+        priority: 'medium',
+        action: 'Practice daily'
+      }],
+      nextSteps: [{
+        title: 'Maintain momentum',
+        description: 'Keep your current practice routine',
+        items: [{ title: 'Solve problems regularly', type: 'goal' }]
+      }],
+      longTermStrategy: ['Focus on consistent improvement'],
+      insights: {
+        consistency: calculateConsistency(activities),
+        progressRate: 'moderate',
+        focusAreas: ['consistency']
+      }
+    };
   }
-
-  // Suggest next challenge types based on recommendations
-  const weakAreas = recommendations
-    .filter(rec => rec.priority === 'high' || rec.priority === 'medium')
-    .map(rec => rec.type);
-
-  if (weakAreas.includes('difficulty')) {
-    nextSteps.push({
-      title: 'Try Harder Problems',
-      description: 'Push your boundaries with more challenging problems.',
-      items: [
-        { title: 'Solve 2-3 hard difficulty problems this week', type: 'goal' },
-        { title: 'Focus on problems that take 45+ minutes to solve', type: 'goal' }
-      ]
-    });
-  }
-
-  if (weakAreas.includes('diversity')) {
-    nextSteps.push({
-      title: 'Explore New Topics',
-      description: 'Broaden your algorithmic knowledge.',
-      items: [
-        { title: 'Try graph algorithms if you haven\'t recently', type: 'goal' },
-        { title: 'Practice dynamic programming problems', type: 'goal' },
-        { title: 'Work on string manipulation algorithms', type: 'goal' }
-      ]
-    });
-  }
-
-  if (weakAreas.includes('consistency')) {
-    nextSteps.push({
-      title: 'Build Daily Habits',
-      description: 'Consistency is key to mastery.',
-      items: [
-        { title: 'Code for at least 30 minutes every day', type: 'goal' },
-        { title: 'Set phone reminders for coding sessions', type: 'goal' },
-        { title: 'Track your daily progress in a journal', type: 'goal' }
-      ]
-    });
-  }
-
-  return nextSteps;
 }
 
 function calculateConsistency(activities: any[]) {
