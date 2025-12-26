@@ -8,7 +8,6 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
   useSecureCookies: process.env.NODE_ENV === 'production',
-  trustHost: true, // Required for Vercel deployment
   providers: [
     CredentialsProvider({
       name: 'Credentials',
