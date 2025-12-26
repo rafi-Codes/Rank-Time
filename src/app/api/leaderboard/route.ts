@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       // Get sessions within time range for each user
       for (const user of users) {
         const sessions = await Session.find({
-          userId: user._id,
+          user: user._id,
           createdAt: { $gte: startDate }
         });
 

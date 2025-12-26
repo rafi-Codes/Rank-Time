@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get('token') || '';
@@ -75,5 +75,13 @@ export default function ResetPasswordPage() {
         <button disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded">Reset password</button>
       </form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto py-12">Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
