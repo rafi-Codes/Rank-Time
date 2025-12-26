@@ -252,6 +252,14 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
+          <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
+        </div>
+      </footer>
     </div>
   );
 }
