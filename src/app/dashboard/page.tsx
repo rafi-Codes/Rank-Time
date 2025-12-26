@@ -127,6 +127,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Debug info */}
+      <div className="bg-yellow-100 dark:bg-yellow-900 p-4 text-sm">
+        Debug: Session status: {status}, Session exists: {session ? 'Yes' : 'No'}, Active tab: {activeTab}
+      </div>
+
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,6 +190,11 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Debug: Show current tab content */}
+          <div className="bg-blue-100 dark:bg-blue-900 p-4 text-sm mb-4">
+            Current tab: {activeTab}
+          </div>
+
           <div className="relative">
             <TabsList className="inline-flex h-auto items-center p-2 gap-4 mx-auto justify-center">
               <TabsTrigger value="stopwatch" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Stopwatch</TabsTrigger>
@@ -206,7 +216,16 @@ export default function Dashboard() {
           </div>
 
           <TabsContent value="stopwatch">
-            <StopwatchTab />
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Stopwatch Tab</CardTitle>
+                <CardDescription>This is a test to see if tabs are rendering</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>If you can see this, the tabs are working!</p>
+                <StopwatchTab />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="timer">
