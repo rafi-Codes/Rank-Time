@@ -15,8 +15,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <SessionProvider
         session={null}
-        refetchInterval={5 * 60} // Refetch session every 5 minutes
-        refetchOnWindowFocus={true}
+        refetchInterval={0} // Disable automatic refetch to prevent session loss
+        refetchOnWindowFocus={false}
         refetchWhenOffline={false}
       >
         {children}
