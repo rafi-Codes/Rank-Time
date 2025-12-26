@@ -5,6 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { connectToDatabase } from '@/lib/db';
 
 export const authOptions: NextAuthOptions = {
+  debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
@@ -16,13 +17,10 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials) return null;
 
+        console.log('NextAuth authorize called for:', credentials.email);
+
         let client;
         try {
-          if (process.env.DEBUG_AUTH === 'true') {
-            // do not log passwords
-            // eslint-disable-next-line no-console
-            console.debug('Authorize attempt for:', { email: credentials.email });
-          }
           client = await connectToDatabase();
           const db = client.db();
 
@@ -30,15 +28,15 @@ export const authOptions: NextAuthOptions = {
             email: credentials.email,
           });
 
-          if (process.env.DEBUG_AUTH === 'true') {
-            // eslint-disable-next-line no-console
-            console.debug('User lookup result:', !!user);
-          }
+          console.log('User found:', !!user);
+
           if (!user) {
+            console.log('No user found for email:', credentials.email);
             throw new Error('No user found!');
           }
 
           if (user.verified === false) {
+            console.log('User not verified:', credentials.email);
             throw new Error('Email not verified');
           }
 
@@ -47,9 +45,14 @@ export const authOptions: NextAuthOptions = {
             user.password
           );
 
+          console.log('Password valid:', isValid);
+
           if (!isValid) {
+            console.log('Invalid password for:', credentials.email);
             throw new Error('Invalid password!');
           }
+
+          console.log('Login successful for:', credentials.email);
 
           return {
             id: user._id.toString(),
@@ -73,40 +76,10 @@ export const authOptions: NextAuthOptions = {
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production', // true in production, false in development
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-      },
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60,
-      },
-    },
-    csrfToken: {
-      name: 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60,
-      },
-    },
-  },
   callbacks: {
     async jwt({ token, user, account }) {
       try {
+        console.log('JWT callback called', { hasUser: !!user, hasAccount: !!account });
         // Persist the OAuth access_token and or the user id to the token right after signin
         if (account) {
           token.accessToken = account.access_token;
@@ -123,6 +96,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
+        console.log('Session callback called', { hasToken: !!token });
         // Send properties to the client, like an access_token and user id from a provider
         if (token) {
           // protect against unexpected shapes
