@@ -1,7 +1,7 @@
 // src/app/login/page.tsx
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -44,21 +44,11 @@ export default function LoginPage() {
       setError(result.error);
       setIsLoading(false);
     } else if (result?.ok) {
-      console.log('Sign in successful, checking session...');
-      // Wait for session to be established
-      setTimeout(async () => {
-        const sessionResponse = await fetch('/api/auth/session');
-        const sessionData = await sessionResponse.json();
-        console.log('Session after sign in:', sessionData);
-        if (sessionData?.user) {
-          console.log('Session established, redirecting to dashboard');
-          router.push('/dashboard');
-        } else {
-          console.error('Session not established');
-          setError('Session not established after login');
-          setIsLoading(false);
-        }
-      }, 1000);
+      console.log('Sign in successful, refetching session...');
+      // Refetch session to ensure it's updated
+      await getSession();
+      console.log('Session refetched, redirecting to dashboard');
+      router.push('/dashboard');
     } else {
       console.error('Sign in result:', result);
       setError('Unknown sign in error');
