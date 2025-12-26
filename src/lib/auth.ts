@@ -7,6 +7,8 @@ import { connectToDatabase } from '@/lib/db';
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: process.env.NODE_ENV === 'production',
+  trustHost: true, // Required for Vercel deployment
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -81,18 +83,18 @@ export const authOptions: NextAuthOptions = {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: 'none', // Allow cross-site for Vercel
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true, // Always secure
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
-        sameSite: 'none',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60, // 24 hours
       },
     },
@@ -100,9 +102,9 @@ export const authOptions: NextAuthOptions = {
       name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
       },
     },
   },
