@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
+import { signOut, useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,9 +95,19 @@ export default function Dashboard() {
   useEffect(() => {
     console.log('Dashboard useEffect - status:', status, 'session:', !!session);
     if (status === 'loading') return; // Still loading
+
     if (!session) {
-      console.log('No session, redirecting to login');
-      router.push('/login');
+      console.log('No session found, attempting to refetch...');
+      // Try to refetch session
+      getSession().then((refetchedSession) => {
+        console.log('Refetched session:', !!refetchedSession);
+        if (!refetchedSession) {
+          console.log('Still no session, redirecting to login');
+          router.push('/login');
+        } else {
+          console.log('Session found after refetch, staying on dashboard');
+        }
+      });
     } else {
       console.log('Session found, staying on dashboard');
     }
