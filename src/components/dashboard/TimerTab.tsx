@@ -120,33 +120,33 @@ export default function TimerTab() {
           </div>
 
           {/* Controls */}
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
             {!isRunning ? (
-              <Button onClick={handleStart} size="lg" disabled={minutes === 0 && seconds === 0}>
+              <Button onClick={handleStart} size="lg" disabled={minutes === 0 && seconds === 0} className="w-full sm:w-auto">
                 <Play className="w-4 h-4 mr-2" />
                 Start
               </Button>
             ) : (
-              <Button onClick={handlePause} variant="secondary" size="lg">
+              <Button onClick={handlePause} variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Pause className="w-4 h-4 mr-2" />
                 Pause
               </Button>
             )}
-            <Button onClick={handleReset} variant="outline" size="lg">
+            <Button onClick={handleReset} variant="outline" size="lg" className="w-full sm:w-auto">
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset
             </Button>
           </div>
 
           {/* Preset Buttons */}
-          <div className="flex justify-center space-x-4">
-            <Button onClick={startPomodoro} variant="outline">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+            <Button onClick={startPomodoro} variant="outline" className="w-full sm:w-auto">
               25 min Focus
             </Button>
-            <Button onClick={startBreak} variant="outline">
+            <Button onClick={startBreak} variant="outline" className="w-full sm:w-auto">
               5 min Break
             </Button>
-            <Button onClick={handleCustomTime} variant="outline">
+            <Button onClick={handleCustomTime} variant="outline" className="w-full sm:w-auto">
               Custom Time
             </Button>
           </div>

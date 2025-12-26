@@ -163,30 +163,31 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('stopwatch')}>
-                <img src="/logo.svg" alt="RankTime Logo" className="h-10 w-10" />
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
-              </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="hidden sm:block">
+      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('stopwatch')}>
+              <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
+            </div>
+            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+              {/* Mobile: Show only sign out button */}
+              <div className="hidden md:block">
                 <div className="flex items-center space-x-2">
                   {safeSession.user?.image ? (
                     <img
                       src={safeSession.user.image}
                       alt="Profile Avatar"
-                      className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600"
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300 dark:border-gray-600"
                     />
                   ) : (
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-white">
                         {(safeSession.user?.name?.charAt(0) || safeSession.user?.email?.charAt(0) || 'U').toUpperCase()}
                       </span>
                     </div>
                   )}
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="hidden lg:block text-sm text-gray-700 dark:text-gray-300">
                     Welcome,{' '}
                     <button
                       onClick={() => setActiveTab('profile')}
@@ -197,13 +198,15 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
+              <ModeToggle />
               <Button
                 onClick={() => signOut()}
                 variant="outline"
                 size="sm"
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm px-2 sm:px-3"
               >
-                Sign out
+                <span className="hidden sm:inline">Sign out</span>
+                <span className="sm:hidden">Out</span>
               </Button>
             </div>
           </div>
@@ -211,26 +214,26 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400">
             Track your competitive programming progress and performance
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <div className="relative">
-            <TabsList className="inline-flex h-auto items-center p-2 gap-4 mx-auto justify-center">
-              <TabsTrigger value="stopwatch" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Stopwatch</TabsTrigger>
-              <TabsTrigger value="timer" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Timer</TabsTrigger>
-              <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Profile</TabsTrigger>
-              <TabsTrigger value="leaderboard" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Leaderboard</TabsTrigger>
-              <TabsTrigger value="rankbuddy" className="text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3">Rank Buddy</TabsTrigger>
+            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap">
+              <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Stopwatch</TabsTrigger>
+              <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Timer</TabsTrigger>
+              <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Profile</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Leaderboard</TabsTrigger>
+              <TabsTrigger value="rankbuddy" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Rank Buddy</TabsTrigger>
             </TabsList>
 
             {/* More menu for less-used tabs */}
-            <div className="absolute right-0 top-0 flex items-center space-x-2">
+            <div className="absolute right-0 top-0 flex items-center space-x-1 sm:space-x-2">
               <ModeToggle />
               <MoreMenu
                 onSelect={(val: string) => {
@@ -278,10 +281,10 @@ export default function Dashboard() {
         </Tabs>
 
         {/* Footer */}
-        <footer className="mt-12 py-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <footer className="mt-8 sm:mt-12 py-6 sm:py-8 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
-            <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
+            <p className="mt-1 sm:mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
           </div>
         </footer>
       </div>
