@@ -12,6 +12,7 @@ interface LeaderboardUser {
   _id: string;
   name: string;
   email: string;
+  usertag?: string;
   totalScore: number;
   currentStreak: number;
   maxStreak: number;
@@ -150,7 +151,7 @@ export default function LeaderboardTab() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{user.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">@{user.usertag || (user.email ? user.email.split('@')[0] : 'user')}</p>
                   </div>
                 </div>
 

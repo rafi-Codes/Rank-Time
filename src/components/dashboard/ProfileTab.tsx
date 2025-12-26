@@ -167,6 +167,15 @@ export default function ProfileTab() {
 
   const nextLeague = getNextLeague(stats.user.league, stats.user.totalScore);
 
+  const displayUserTag = (() => {
+    const tag = stats.user.usertag;
+    if (tag && tag.trim().length > 0) return tag;
+    const nameFallback = session?.user?.name ? session.user.name.replace(/\s+/g, '').toLowerCase() : null;
+    if (nameFallback && nameFallback.length > 0) return nameFallback;
+    const emailFallback = session?.user?.email ? session.user.email.split('@')[0] : 'user';
+    return emailFallback;
+  })();
+
   return (
     <div className="space-y-6">
       {/* Profile Header */}
@@ -199,7 +208,7 @@ export default function ProfileTab() {
               <CardTitle className="text-2xl">{session?.user?.name || 'User'}</CardTitle>
               <CardDescription>{session?.user?.email}</CardDescription>
               <div className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">
-                @{stats.user.usertag}
+                @{displayUserTag}
               </div>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge className={`${LEAGUE_COLORS[stats.user.league as keyof typeof LEAGUE_COLORS] || 'bg-gray-500'} text-white`}>

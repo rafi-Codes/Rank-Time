@@ -3,8 +3,8 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 export interface ILap {
   name: string;
   duration: number; // in seconds
-  startedAt: Date;
-  endedAt: Date;
+  startedAt?: Date;
+  endedAt?: Date;
   comment?: string;
 }
 
@@ -29,17 +29,17 @@ export interface ISession extends Document {
 const LapSchema = new Schema<ILap>({
   name: { type: String, required: true },
   duration: { type: Number, required: true },
-  startedAt: { type: Date, required: true },
-  endedAt: { type: Date, required: true },
+  startedAt: { type: Date },
+  endedAt: { type: Date },
   comment: { type: String },
 });
 
 const SessionSchema = new Schema<ISession>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    problemId: { type: String, required: true },
+    problemId: { type: String, required: false },
     problemName: { type: String, required: true },
-    problemUrl: { type: String, required: true },
+    problemUrl: { type: String, required: false },
     problemRating: { type: Number, required: true },
     problemTags: [{ type: String }],
     laps: [LapSchema],
@@ -48,7 +48,7 @@ const SessionSchema = new Schema<ISession>(
     streakBonus: { type: Number, default: 0 },
     notes: { type: String },
     comments: { type: String },
-    codeforcesHandle: { type: String, required: true },
+    codeforcesHandle: { type: String, required: false },
   },
   { timestamps: true }
 );

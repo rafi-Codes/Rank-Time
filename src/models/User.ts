@@ -12,6 +12,8 @@ export interface IUser extends Document {
   currentStreak: number;
   maxStreak: number;
   lastSessionDate?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   league: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'grandmaster';
   rank: number;
   totalSessions: number;
@@ -28,15 +30,17 @@ const UserSchema = new Schema<IUser>(
     codeforcesHandle: { type: String },
     usertag: { type: String, required: true, unique: true },
     following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     totalScore: { type: Number, default: 0 },
     currentStreak: { type: Number, default: 0 },
     maxStreak: { type: Number, default: 0 },
     lastSessionDate: { type: Date },
-    league: {
-      type: String,
-      enum: ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster'],
-      default: 'bronze',
-    },
+  league: {
+    type: String,
+    enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master', 'Legend'],
+    default: 'Beginner',
+  },
     rank: { type: Number, default: 0 },
     totalSessions: { type: Number, default: 0 },
   },

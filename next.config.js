@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['userpic.codeforces.org', 'lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'userpic.codeforces.org' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+    ],
   },
   env: {
     MONGODB_URI: process.env.MONGODB_URI,

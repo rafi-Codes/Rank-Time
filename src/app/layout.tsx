@@ -13,7 +13,12 @@ export const metadata: Metadata = {
   description: 'Track your competitive programming journey, analyze your performance, and climb the ranks with data-driven insights.',
   keywords: ['competitive programming', 'coding', 'algorithm', 'ranking', 'progress tracking'],
   authors: [{ name: 'Rafiul Hasan' }],
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+// Viewport metadata must be exported separately in Next.js app router
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 // Warn at startup if NEXTAUTH_URL looks misconfigured in production

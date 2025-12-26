@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, Clock, Trophy, Target, Download, FileText, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface Session {
   _id: string;
@@ -100,7 +100,7 @@ export default function TracksheetTab() {
     document.body.removeChild(link);
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     const excelData = filteredSessions.map(session => ({
       'Date': formatDate(session.createdAt),
       'Problem Title': session.problemTitle,
@@ -113,10 +113,19 @@ export default function TracksheetTab() {
       'Comments': session.comments || ''
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tracksheet');
-    XLSX.writeFile(workbook, `tracksheet_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Tracksheet');
+
+    // Add headers
+    worksheet.addRow(Object.keys(excelData[0]));
+
+    // Add data rows
+    excelData.forEach(row => {
+      worksheet.addRow(Object.values(row));
+    });
+
+    // Write file
+    await workbook.xlsx.writeFile(`tracksheet_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const filteredSessions = sessions.filter(session =>

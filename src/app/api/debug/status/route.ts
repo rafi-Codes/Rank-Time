@@ -9,9 +9,13 @@ export function GET() {
     return NextResponse.json({ ok: false, message: 'debug disabled' }, { status: 404 });
   }
 
+  const rawNextAuthUrl = process.env.NEXTAUTH_URL || null;
+  const nextAuthUrl = rawNextAuthUrl ? rawNextAuthUrl.replace(/\/+$/, '') : null;
   const safe = {
     nodeEnv: process.env.NODE_ENV || null,
-    nextAuthUrl: process.env.NEXTAUTH_URL || null,
+    nextAuthUrlRaw: rawNextAuthUrl,
+    nextAuthUrl: nextAuthUrl,
+    nextAuthUrlHasTrailingSlash: !!rawNextAuthUrl && rawNextAuthUrl.endsWith('/'),
     nextAuthSecretSet: !!process.env.NEXTAUTH_SECRET,
     mongoUriSet: !!process.env.MONGODB_URI,
   };
