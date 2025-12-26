@@ -1,12 +1,13 @@
 // src/middleware.ts
-import { withAuth } from 'next-auth/middleware';
+// Temporarily disabled for debugging
+// import { withAuth } from 'next-auth/middleware';
 
-export default withAuth({
-  pages: {
-    signIn: '/login',
-  },
-});
+// export default withAuth({
+//   pages: {
+//     signIn: '/login',
+//   },
+// });
 
-export const config = {
-  matcher: ['/dashboard/:path*'],
-};
+// export const config = {
+//   matcher: ['/dashboard/:path*'],
+// };
