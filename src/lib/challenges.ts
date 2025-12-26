@@ -5,9 +5,9 @@ import Session from '@/models/Session';
 import { OpenRouter } from '@openrouter/sdk';
 
 export const pointsFor = (difficulty: string, isWeekly = false) => {
-  if (difficulty === 'easy') return isWeekly ? 40 : 20;
-  if (difficulty === 'medium') return isWeekly ? 70 : 35;
-  return isWeekly ? 100 : 50; // hard
+  if (difficulty === 'easy') return isWeekly ? 5 : 2;
+  if (difficulty === 'medium') return isWeekly ? 10 : 3;
+  return isWeekly ? 20 : 5; // hard
 };
 
 async function generateAIWeeklyChallenges(userId: any) {
@@ -113,7 +113,7 @@ Return exactly 3 challenges in this JSON format:
     "description": "Detailed description of what to do (max 200 chars)",
     "difficulty": "easy" | "medium" | "hard",
     "topics": ["topic1", "topic2"],
-    "bonusPoints": number (20-100 based on difficulty),
+    "bonusPoints": number (5-20 based on difficulty),
     "category": "algorithms" | "data-structures" | "consistency" | "difficulty" | "practice" | "learning"
   }
 ]
@@ -173,7 +173,7 @@ Consider their league level (${userData.league}) and recent performance when set
         }
 
         // Ensure reasonable bonus points
-        if (challenge.bonusPoints < 20 || challenge.bonusPoints > 100) {
+        if (challenge.bonusPoints < 5 || challenge.bonusPoints > 20) {
           challenge.bonusPoints = pointsFor(challenge.difficulty, true) * 0.5;
         }
       });
@@ -203,7 +203,7 @@ function getFallbackWeeklyChallenges() {
       description: "Solve 5 medium-difficulty algorithmic problems this week",
       difficulty: "medium",
       topics: ["algorithms", "data-structures"],
-      bonusPoints: 50,
+      bonusPoints: 10,
       category: "algorithms"
     },
     {
@@ -211,7 +211,7 @@ function getFallbackWeeklyChallenges() {
       description: "Code for at least 5 days this week",
       difficulty: "medium",
       topics: ["practice", "consistency"],
-      bonusPoints: 40,
+      bonusPoints: 10,
       category: "consistency"
     },
     {
@@ -219,7 +219,7 @@ function getFallbackWeeklyChallenges() {
       description: "Successfully solve one hard-rated problem",
       difficulty: "hard",
       topics: ["advanced-algorithms", "complexity"],
-      bonusPoints: 75,
+      bonusPoints: 20,
       category: "difficulty"
     }
   ];
@@ -244,7 +244,7 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
         type: "daily",
         difficulty: "easy",
         topics: ["implementation", "math"],
-        bonusPoints: 10,
+        bonusPoints: 2,
         deadline: endOfDay,
         category: "problem-solving"
       },
@@ -254,7 +254,7 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
         type: "daily",
         difficulty: "easy",
         topics: ["arrays", "strings"],
-        bonusPoints: 15,
+        bonusPoints: 3,
         deadline: endOfDay,
         category: "data-structures"
       },
@@ -264,7 +264,7 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
         type: "daily",
         difficulty: "medium",
         topics: ["optimization", "algorithms"],
-        bonusPoints: 25,
+        bonusPoints: 5,
         deadline: endOfDay,
         category: "efficiency"
       }
