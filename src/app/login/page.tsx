@@ -34,17 +34,18 @@ export default function LoginPage() {
     setSuccess('');
 
     const result = await signIn('credentials', {
-      redirect: false,
+      redirect: true,
       email,
       password,
+      callbackUrl: '/dashboard',
     });
 
+    // If we reach here, sign in failed
     if (result?.error) {
       setError(result.error);
       setIsLoading(false);
-    } else {
-      router.push('/dashboard');
     }
+    // If successful, NextAuth will handle the redirect
   }
 
   return (
