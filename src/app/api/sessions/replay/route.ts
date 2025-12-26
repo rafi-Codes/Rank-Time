@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Get the specific session
     const sessionData = await Session.findOne({
       _id: sessionId,
-      userId: user._id
+      user: user._id
     });
 
     if (!sessionData) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Get recent sessions for context (last 5 sessions)
     const recentSessions = await Session.find({
-      userId: user._id,
+      user: user._id,
       createdAt: { $lte: sessionData.createdAt }
     })
     .sort({ createdAt: -1 })
@@ -80,7 +80,8 @@ async function generateSessionAnalysis(sessionData: any, recentSessions: any[]) 
     });
 
     // Calculate performance metrics
-    const avgTimePerLap = sessionData.totalTime / sessionData.laps;
+    const lapsCount = Array.isArray(sessionData.laps) ? sessionData.laps.length : (typeof sessionData.laps === 'number' ? sessionData.laps : 0);
+    const avgTimePerLap = lapsCount > 0 ? sessionData.totalTime / lapsCount : 0;
     const baseScore = sessionData.score - sessionData.streakBonus;
 
     // Compare with recent sessions
@@ -157,7 +158,10 @@ Please provide a comprehensive analysis of this coding session.`;
         recommendations: ['Try again later for detailed analysis']
       },
       metrics: {
-        avgTimePerLap: Math.round(sessionData.totalTime / sessionData.laps),
+        avgTimePerLap: (() => {
+          const lapsCount = Array.isArray(sessionData.laps) ? sessionData.laps.length : (typeof sessionData.laps === 'number' ? sessionData.laps : 0);
+          return lapsCount > 0 ? Math.round(sessionData.totalTime / lapsCount) : 0;
+        })(),
         baseScore: sessionData.score - sessionData.streakBonus,
         ratingProgress: 0,
         performanceLevel: 'unknown'

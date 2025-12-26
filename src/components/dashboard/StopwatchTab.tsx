@@ -177,6 +177,8 @@ export default function StopwatchTab() {
         headers: {
           'Content-Type': 'application/json',
         },
+        // ensure cookies (session) are sent for authentication
+        credentials: 'include',
         body: JSON.stringify({
           problemTitle,
           problemRating: parseInt(problemRating),
@@ -191,6 +193,7 @@ export default function StopwatchTab() {
         }),
       });
 
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         alert('Session saved successfully!');
         handleReset();
@@ -199,7 +202,8 @@ export default function StopwatchTab() {
         setProblemUrl('');
         setComments('');
       } else {
-        alert('Failed to save session');
+        console.error('Save session failed:', data);
+        alert(data?.error || 'Failed to save session');
       }
     } catch (error) {
       console.error('Error saving session:', error);

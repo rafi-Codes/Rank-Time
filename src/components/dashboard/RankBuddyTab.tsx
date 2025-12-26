@@ -32,10 +32,13 @@ interface HeatmapData {
   date: string;
   count: number;
   points: number;
+  totalTime: number;
+  averageScore: number;
   activities: Array<{
-    type: string;
-    description: string;
-    points: number;
+    sessions: number;
+    totalTime: number;
+    averageScore: number;
+    topics: string[];
     time: string;
   }>;
 }
@@ -68,11 +71,17 @@ interface BadgeData {
   progressPercentage?: number;
 }
 
+interface LapData {
+  name: string;
+  duration: number;
+  comment?: string;
+}
+
 interface SessionData {
   _id: string;
   problemName: string;
   problemRating: number;
-  laps: number;
+  laps: LapData[];
   totalTime: number;
   score: number;
   streakBonus: number;
@@ -690,7 +699,7 @@ export default function RankBuddyTab() {
                         </span>
                         <span className="flex items-center space-x-1">
                           <Zap className="h-3 w-3" />
-                          <span>{session.laps} laps</span>
+                          <span>{session.laps.length} laps</span>
                         </span>
                         <span className="flex items-center space-x-1">
                           <Star className="h-3 w-3" />
@@ -762,8 +771,8 @@ export default function RankBuddyTab() {
                     <p className="text-xs text-green-700 dark:text-green-300">Total Time</p>
                   </div>
                   <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <p className="text-lg font-bold text-purple-600">{replayData.session.laps}</p>
-                    <p className="text-xs text-purple-700 dark:text-purple-300">Attempts</p>
+                    <p className="text-lg font-bold text-purple-600">{replayData.session.laps.length}</p>
+                    <p className="text-xs text-purple-700 dark:text-purple-300">Laps</p>
                   </div>
                   <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                     <p className="text-lg font-bold text-orange-600">{replayData.session.score}</p>
@@ -772,11 +781,7 @@ export default function RankBuddyTab() {
                 </div>
 
                 {/* Performance Metrics */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-lg font-bold">{replayData.analysis.metrics.avgTimePerLap}s</p>
-                    <p className="text-xs text-gray-500">Avg Time/Lap</p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <p className="text-lg font-bold">{replayData.analysis.metrics.ratingProgress > 0 ? '+' : ''}{replayData.analysis.metrics.ratingProgress}</p>
                     <p className="text-xs text-gray-500">Rating Progress</p>
@@ -832,6 +837,46 @@ export default function RankBuddyTab() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                </div>
+
+                {/* Lap Breakdown */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-gray-900 dark:text-white flex items-center space-x-2">
+                      <Clock className="h-4 w-4" />
+                      <span>Lap Breakdown</span>
+                    </h4>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-blue-600">
+                        {replayData.analysis.metrics.avgTimePerLap || 0}s avg
+                      </p>
+                      <p className="text-xs text-gray-500">per lap</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {replayData.session.laps.map((lap, index) => (
+                      <div key={index} className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-gray-900 dark:text-white text-sm">
+                              {lap.name || `Lap ${index + 1}`}
+                            </h5>
+                            {lap.comment && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                                "{lap.comment}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Duration</span>
+                          <span className="text-lg font-bold text-blue-600">
+                            {Math.floor(lap.duration / 60)}:{(lap.duration % 60).toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

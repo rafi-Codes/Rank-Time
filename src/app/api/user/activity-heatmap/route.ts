@@ -7,11 +7,18 @@ import UserActivity from '@/models/UserActivity';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
+
+    // Find the user by email
+    const User = (await import('@/models/User')).default;
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d'; // 7d, 30d, 90d, 1y
@@ -40,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Build query
     let query: any = {
-      userId: session.user.id,
+      userId: user._id,
       createdAt: { $gte: startDate }
     };
 
@@ -54,15 +61,17 @@ export async function GET(request: NextRequest) {
       {
         $group: {
           _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+            $dateToString: { format: '%Y-%m-%d', date: '$date' }
           },
-          count: { $sum: 1 },
-          totalPoints: { $sum: '$points' },
+          totalSessions: { $sum: '$sessions' },
+          totalTime: { $sum: '$totalTime' },
+          averageScore: { $avg: '$averageScore' },
           activities: {
             $push: {
-              type: '$activityType',
-              description: '$description',
-              points: '$points',
+              sessions: '$sessions',
+              totalTime: '$totalTime',
+              averageScore: '$averageScore',
+              topics: '$topics',
               time: '$createdAt'
             }
           }
@@ -78,8 +87,10 @@ export async function GET(request: NextRequest) {
     activities.forEach(activity => {
       activityMap[activity._id] = {
         date: activity._id,
-        count: activity.count,
-        points: activity.totalPoints,
+        count: activity.totalSessions,
+        points: activity.totalSessions * 10, // Simple points calculation
+        totalTime: activity.totalTime,
+        averageScore: activity.averageScore,
         activities: activity.activities
       };
     });
@@ -94,20 +105,23 @@ export async function GET(request: NextRequest) {
         date: dateStr,
         count: activityMap[dateStr]?.count || 0,
         points: activityMap[dateStr]?.points || 0,
+        totalTime: activityMap[dateStr]?.totalTime || 0,
+        averageScore: activityMap[dateStr]?.averageScore || 0,
         activities: activityMap[dateStr]?.activities || []
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     // Calculate statistics
-    const totalActivities = activities.reduce((sum, activity) => sum + activity.count, 0);
-    const totalPoints = activities.reduce((sum, activity) => sum + activity.totalPoints, 0);
+    const totalActivities = activities.reduce((sum, activity) => sum + activity.totalSessions, 0);
+    const totalPoints = activities.reduce((sum, activity) => sum + (activity.totalSessions * 10), 0);
+    const totalTime = activities.reduce((sum, activity) => sum + activity.totalTime, 0);
     const averageDaily = totalActivities / heatmapData.length;
 
     // Find most active day
     const mostActiveDay = activities.reduce((max, activity) =>
-      activity.count > max.count ? activity : max,
-      { _id: '', count: 0, totalPoints: 0, activities: [] }
+      activity.totalSessions > max.totalSessions ? activity : max,
+      { _id: '', totalSessions: 0, totalTime: 0, averageScore: 0, activities: [] }
     );
 
     return NextResponse.json({
@@ -115,6 +129,7 @@ export async function GET(request: NextRequest) {
       statistics: {
         totalActivities,
         totalPoints,
+        totalTime,
         averageDaily: Math.round(averageDaily * 10) / 10,
         mostActiveDay: mostActiveDay._id,
         period

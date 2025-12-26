@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const timeRange = searchParams.get('timeRange') || 'all';
 
     let users = await User.find({}).select(
-      'name email totalScore currentStreak maxStreak rank league totalSessions'
+      'name email usertag totalScore currentStreak maxStreak rank league totalSessions'
     );
 
     // Calculate time-based stats if needed

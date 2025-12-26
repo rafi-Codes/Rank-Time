@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showForgot, setShowForgot] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fpStatus, setFpStatus] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -115,6 +121,115 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+
+        {/* Forgot password inline panel */}
+        <div className="mt-4 text-center">
+          {!showForgot ? (
+            <button
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => { setShowForgot(true); setFpStatus(''); }}
+            >
+              Forgot password?
+            </button>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded">
+              <h4 className="text-sm font-medium mb-2">Reset password via email OTP</h4>
+              {!otpSent ? (
+                <>
+                  <p className="text-sm text-gray-600 mb-2">Enter your account email and we'll send a one-time code.</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      type="email"
+                      placeholder="you@example.com"
+                      className="flex-1 p-2 border rounded"
+                    />
+                    <button
+                      onClick={async () => {
+                        setFpStatus('');
+                        try {
+                          const res = await fetch('/api/auth/forgot-password-otp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email }),
+                          });
+                          const data = await res.json();
+                          setFpStatus(data?.message || 'If an account exists, an OTP was sent.');
+                          setOtpSent(true);
+                        } catch (err) {
+                          console.error(err);
+                          setFpStatus('Failed to send OTP');
+                        }
+                      }}
+                      className="px-3 py-2 bg-blue-600 text-white rounded"
+                    >Send OTP</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-2">Enter the code we emailed and choose a new password.</p>
+                  <input
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    type="text"
+                    placeholder="One-time code"
+                    className="w-full p-2 border rounded mb-2"
+                  />
+                  <input
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    type="password"
+                    placeholder="New password"
+                    className="w-full p-2 border rounded mb-2"
+                  />
+                  <input
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    type="password"
+                    placeholder="Confirm password"
+                    className="w-full p-2 border rounded mb-2"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        setFpStatus('');
+                        if (newPassword !== confirmPassword) { setFpStatus('Passwords do not match'); return; }
+                        try {
+                          const res = await fetch('/api/auth/reset-password-otp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, otp: otpCode, password: newPassword }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setFpStatus('Password reset successful. Please sign in with your new password.');
+                            setShowForgot(false);
+                            setOtpSent(false);
+                            setOtpCode('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                          } else {
+                            setFpStatus(data?.message || 'Failed to reset password');
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          setFpStatus('Failed to reset password');
+                        }
+                      }}
+                      className="px-3 py-2 bg-green-600 text-white rounded"
+                    >Reset</button>
+                    <button
+                      onClick={() => { setShowForgot(false); setOtpSent(false); setFpStatus(''); }}
+                      className="px-3 py-2 bg-gray-300 dark:bg-gray-700 rounded"
+                    >Cancel</button>
+                  </div>
+                </>
+              )}
+              {fpStatus && <p className="mt-2 text-sm">{fpStatus}</p>}
+            </div>
+          )}
+        </div>
 
         <div className="text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">

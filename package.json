@@ -25,6 +25,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.320.0",
     "mongodb": "^5.9.2",
     "mongoose": "^8.1.0",
@@ -37,7 +38,6 @@
     "recharts": "^2.15.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -47,7 +47,6 @@
     "@types/node": "^20.19.27",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
-    "@types/xlsx": "^0.0.35",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.3",
