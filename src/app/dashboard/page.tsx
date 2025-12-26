@@ -78,6 +78,7 @@ export default function Dashboard() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
+  const [localSession, setLocalSession] = useState(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Load active tab from localStorage on mount
@@ -119,8 +120,8 @@ export default function Dashboard() {
         console.log('Refetched session result:', !!refetchedSession);
         if (refetchedSession) {
           console.log('Session found after refetch, user:', refetchedSession.user?.email);
-          // Force update the session state
-          update(refetchedSession);
+          // Set local session to force re-render
+          setLocalSession(refetchedSession);
         } else {
           console.log('Still no session after refetch, redirecting to login');
           router.push('/login');
@@ -159,11 +160,12 @@ export default function Dashboard() {
     );
   }
 
-  if (!session) {
+  if (!session && !localSession) {
     return null; // Will redirect in useEffect
   }
 
-  console.log('Rendering dashboard with session:', session);
+  const currentSession = session || localSession;
+  console.log('Rendering dashboard with session:', currentSession);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -181,16 +183,16 @@ export default function Dashboard() {
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden sm:block">
                 <div className="flex items-center space-x-2">
-                  {session.user?.image ? (
+                  {currentSession.user?.image ? (
                     <img
-                      src={session.user.image}
+                      src={currentSession.user.image}
                       alt="Profile Avatar"
                       className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600"
                     />
                   ) : (
                     <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-white">
-                        {(session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U').toUpperCase()}
+                        {(currentSession.user?.name?.charAt(0) || currentSession.user?.email?.charAt(0) || 'U').toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -200,7 +202,7 @@ export default function Dashboard() {
                       onClick={() => setActiveTab('profile')}
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
                     >
-                      {session.user?.name || session.user?.email}
+                      {currentSession.user?.name || currentSession.user?.email}
                     </button>
                   </span>
                 </div>
