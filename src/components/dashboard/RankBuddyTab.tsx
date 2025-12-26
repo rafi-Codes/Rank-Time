@@ -190,10 +190,10 @@ export default function RankBuddyTab() {
       // Load all challenges (daily and weekly)
       const response = await fetch('/api/user/challenges?type=all');
       if (response.ok) {
-        const data = await response.json();
+        const data: { challenges: any[] } = await response.json();
         console.log('Loaded challenges:', data.challenges.length, 'total');
-        const weeklyCount = data.challenges.filter(c => c.type === 'weekly').length;
-        const dailyCount = data.challenges.filter(c => c.type === 'daily').length;
+        const weeklyCount = data.challenges.filter((c: any) => c.type === 'weekly').length;
+        const dailyCount = data.challenges.filter((c: any) => c.type === 'daily').length;
         console.log(`Daily: ${dailyCount}, Weekly: ${weeklyCount}`);
         setChallenges(data.challenges);
 
