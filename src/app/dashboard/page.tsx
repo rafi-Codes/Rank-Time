@@ -285,6 +285,37 @@ export default function Dashboard() {
           <div className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
             <p className="mt-1 sm:mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
+            <div className="mt-3 sm:mt-4 space-y-1">
+              <p className="font-medium text-gray-700 dark:text-gray-300">Connect with me:</p>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 text-xs">
+                <a
+                  href="https://github.com/rafi-Codes"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                >
+                  GitHub: rafi-Codes
+                </a>
+                <span className="hidden sm:inline text-gray-400">•</span>
+                <a
+                  href="https://facebook.com/parasite2048"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                >
+                  Facebook: parasite2048
+                </a>
+                <span className="hidden sm:inline text-gray-400">•</span>
+                <a
+                  href="https://instagram.com/__parasite_"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300 underline underline-offset-2 transition-colors"
+                >
+                  Instagram: __parasite_
+                </a>
+              </div>
+            </div>
           </div>
         </footer>
       </div>
