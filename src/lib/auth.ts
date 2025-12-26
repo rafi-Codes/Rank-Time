@@ -107,9 +107,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (user) {
           token.id = user.id;
-          token.email = user.email;
-          token.name = user.name;
-          token.picture = user.image;
+          token.email = user.email as string;
+          token.name = user.name as string;
+          token.picture = user.image as string;
         }
         return token;
       } catch (err) {
