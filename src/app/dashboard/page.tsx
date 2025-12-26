@@ -155,6 +155,10 @@ export default function Dashboard() {
   }
 
   const currentSession = session || localSession;
+  if (!currentSession) return null;
+
+  // TypeScript knows currentSession is not null here
+  const safeSession = currentSession;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -169,16 +173,16 @@ export default function Dashboard() {
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden sm:block">
                 <div className="flex items-center space-x-2">
-                  {currentSession.user?.image ? (
+                  {safeSession.user?.image ? (
                     <img
-                      src={currentSession.user.image}
+                      src={safeSession.user.image}
                       alt="Profile Avatar"
                       className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600"
                     />
                   ) : (
                     <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-white">
-                        {(currentSession.user?.name?.charAt(0) || currentSession.user?.email?.charAt(0) || 'U').toUpperCase()}
+                        {(safeSession.user?.name?.charAt(0) || safeSession.user?.email?.charAt(0) || 'U').toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -188,7 +192,7 @@ export default function Dashboard() {
                       onClick={() => setActiveTab('profile')}
                       className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
                     >
-                      {currentSession.user?.name || currentSession.user?.email}
+                      {safeSession.user?.name || safeSession.user?.email}
                     </button>
                   </span>
                 </div>
