@@ -115,14 +115,26 @@ export default function Dashboard() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Status: {status}</p>
+        </div>
       </div>
     );
   }
 
   if (!session) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="text-red-600 dark:text-red-400 text-xl mb-4">Session Lost</div>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Redirecting to login...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">Status: {status}, Session: {session ? 'Yes' : 'No'}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
