@@ -1,13 +1,9 @@
 // src/middleware.ts
-// Temporarily disabled for debugging
-// import { withAuth } from 'next-auth/middleware';
+// Temporarily disabled for debugging - export empty function
+export default function middleware() {
+  // Do nothing - middleware disabled
+}
 
-// export default withAuth({
-//   pages: {
-//     signIn: '/login',
-//   },
-// });
-
-// export const config = {
-//   matcher: ['/dashboard/:path*'],
-// };
+export const config = {
+  matcher: [], // No routes matched
+};
