@@ -78,6 +78,7 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Load active tab from localStorage on mount
   useEffect(() => {
@@ -92,9 +93,24 @@ export default function Dashboard() {
     localStorage.setItem('ranktime-active-tab', activeTab);
   }, [activeTab]);
 
+  // Set a timeout for loading state
+  useEffect(() => {
+    if (status === 'loading') {
+      const timer = setTimeout(() => {
+        console.log('Loading timeout reached, forcing redirect');
+        setLoadingTimeout(true);
+      }, 10000); // 10 seconds timeout
+
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
   useEffect(() => {
     console.log('Dashboard useEffect - status:', status, 'session:', !!session);
-    if (status === 'loading') return; // Still loading
+    if (status === 'loading') {
+      console.log('Still loading, waiting...');
+      return; // Still loading
+    }
 
     if (!session) {
       console.log('No session found, attempting to refetch...');
@@ -107,19 +123,40 @@ export default function Dashboard() {
         } else {
           console.log('Session found after refetch, staying on dashboard');
         }
+      }).catch((error) => {
+        console.error('Error refetching session:', error);
+        router.push('/login');
       });
     } else {
       console.log('Session found, staying on dashboard');
     }
   }, [session, status, router]);
 
-  if (status === 'loading') {
+  if (status === 'loading' && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Status: {status}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'loading' && loadingTimeout) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="text-red-600 dark:text-red-400 text-xl mb-4">Loading Timeout</div>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Session loading took too long. This might be due to environment configuration issues.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">Status: {status}, Timeout: {loadingTimeout ? 'Yes' : 'No'}</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
