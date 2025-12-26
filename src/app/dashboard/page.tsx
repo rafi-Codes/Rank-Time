@@ -75,7 +75,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
 }
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -106,23 +106,31 @@ export default function Dashboard() {
   }, [status]);
 
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
+    console.log('Dashboard useEffect triggered - status:', status, 'session exists:', !!session);
+    if (status === 'loading') {
+      console.log('Status is loading, waiting...');
+      return; // Still loading
+    }
 
     if (!session) {
       console.log('No session found, attempting to refetch...');
       // Try to refetch session
       getSession().then((refetchedSession) => {
-        console.log('Refetched session:', !!refetchedSession);
-        if (!refetchedSession) {
-          console.log('Still no session, redirecting to login');
-          router.push('/login');
+        console.log('Refetched session result:', !!refetchedSession);
+        if (refetchedSession) {
+          console.log('Session found after refetch, user:', refetchedSession.user?.email);
+          // Force update the session state
+          update(refetchedSession);
         } else {
-          console.log('Session found after refetch, staying on dashboard');
+          console.log('Still no session after refetch, redirecting to login');
+          router.push('/login');
         }
       }).catch((error) => {
         console.error('Error refetching session:', error);
         router.push('/login');
       });
+    } else {
+      console.log('Session already exists, user:', session.user?.email);
     }
   }, [session, status, router]);
 
