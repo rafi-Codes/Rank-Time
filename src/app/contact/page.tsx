@@ -134,10 +134,10 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="w-5 h-5" />
-                Connect With Us
+                Connect With Me
               </CardTitle>
               <CardDescription>
-                Find us on social media or reach out directly
+                Find me on social media or reach out directly
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
