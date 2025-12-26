@@ -93,9 +93,13 @@ export default function Dashboard() {
   }, [activeTab]);
 
   useEffect(() => {
+    console.log('Dashboard useEffect - status:', status, 'session:', !!session);
     if (status === 'loading') return; // Still loading
     if (!session) {
+      console.log('No session, redirecting to login');
       router.push('/login');
+    } else {
+      console.log('Session found, staying on dashboard');
     }
   }, [session, status, router]);
 
