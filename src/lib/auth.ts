@@ -7,7 +7,6 @@ import { connectToDatabase } from '@/lib/db';
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
-  useSecureCookies: process.env.NODE_ENV === 'production',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -82,20 +81,18 @@ export const authOptions: NextAuthOptions = {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none', // Always none for Vercel
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
+        secure: true, // Always secure for Vercel
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
+        secure: true,
         maxAge: 24 * 60 * 60, // 24 hours
       },
     },
@@ -103,10 +100,9 @@ export const authOptions: NextAuthOptions = {
       name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'none',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
+        secure: true,
       },
     },
   },
