@@ -107,31 +107,20 @@ export default function Dashboard() {
   }, [status]);
 
   useEffect(() => {
-    console.log('Dashboard useEffect triggered - status:', status, 'session exists:', !!session);
-    if (status === 'loading') {
-      console.log('Status is loading, waiting...');
-      return; // Still loading
-    }
+    if (status === 'loading') return; // Still loading
 
     if (!session) {
-      console.log('No session found, attempting to refetch...');
       // Try to refetch session
       getSession().then((refetchedSession) => {
-        console.log('Refetched session result:', !!refetchedSession);
         if (refetchedSession) {
-          console.log('Session found after refetch, user:', refetchedSession.user?.email);
           // Set local session to force re-render
           setLocalSession(refetchedSession);
         } else {
-          console.log('Still no session after refetch, redirecting to login');
           router.push('/login');
         }
       }).catch((error) => {
-        console.error('Error refetching session:', error);
         router.push('/login');
       });
-    } else {
-      console.log('Session already exists, user:', session.user?.email);
     }
   }, [session, status, router]);
 
@@ -165,13 +154,9 @@ export default function Dashboard() {
   }
 
   const currentSession = session || localSession;
-  console.log('Rendering dashboard with session:', currentSession);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="p-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-        ✅ Dashboard loaded successfully! Session active.
-      </div>
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
