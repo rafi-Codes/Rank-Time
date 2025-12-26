@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
+        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
@@ -95,7 +95,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
+        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
         maxAge: 24 * 60 * 60, // 24 hours
       },
     },
@@ -106,7 +106,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
+        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.replace('https://', '').replace('http://', '').split('/')[0] : undefined,
       },
     },
   },
