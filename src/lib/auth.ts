@@ -76,16 +76,29 @@ export const authOptions: NextAuthOptions = {
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true, // Always secure in production
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user, account }) {
       try {
-        console.log('JWT callback called', { hasUser: !!user, hasAccount: !!account });
+        console.log('JWT callback called', { hasUser: !!user, hasAccount: !!account, tokenSub: token.sub });
         // Persist the OAuth access_token and or the user id to the token right after signin
         if (account) {
           token.accessToken = account.access_token;
         }
         if (user) {
           token.id = user.id;
+          token.email = user.email;
+          token.name = user.name;
           token.picture = user.image;
         }
         return token;
@@ -96,16 +109,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
-        console.log('Session callback called', { hasToken: !!token });
+        console.log('Session callback called', { hasToken: !!token, tokenId: token.id });
         // Send properties to the client, like an access_token and user id from a provider
         if (token) {
-          // protect against unexpected shapes
-          try {
-            session.user.id = (token as any).id as string;
-            session.user.image = (token as any).picture as string;
-          } catch (inner) {
-            console.warn('Unable to attach token props to session:', inner);
-          }
+          session.user.id = token.id as string;
+          session.user.email = token.email as string;
+          session.user.name = token.name as string;
+          session.user.image = token.picture as string;
         }
         return session;
       } catch (err) {
