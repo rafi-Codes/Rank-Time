@@ -314,6 +314,13 @@ export default function Dashboard() {
                 >
                   Instagram: __parasite_
                 </a>
+                <span className="hidden sm:inline text-gray-400">•</span>
+                <a
+                  href="mailto:rafi27hasan@gmail.com"
+                  className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 underline underline-offset-2 transition-colors"
+                >
+                  Email: rafi27hasan@gmail.com
+                </a>
               </div>
             </div>
           </div>
