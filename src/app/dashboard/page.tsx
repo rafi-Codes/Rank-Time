@@ -155,8 +155,13 @@ export default function Dashboard() {
     return null; // Will redirect in useEffect
   }
 
+  console.log('Rendering dashboard with session:', session);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="p-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+        ✅ Dashboard loaded successfully! Session active.
+      </div>
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
