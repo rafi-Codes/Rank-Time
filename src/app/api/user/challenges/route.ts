@@ -48,6 +48,19 @@ export async function GET(request: NextRequest) {
       challenges = await Challenge.find(query).sort({ createdAt: -1 }).limit(20);
     }
 
+    // Also generate weekly challenges if none exist and we're looking for weekly or all challenges
+    if (status === 'active' && (type === 'weekly' || type === 'all')) {
+      const weeklyChallenges = challenges.filter(c => c.type === 'weekly');
+      if (weeklyChallenges.length === 0) {
+        console.log('No weekly challenges found, generating...');
+        await generateChallengesForUser(user._id, { daily: false, weekly: true });
+        challenges = await Challenge.find(query).sort({ createdAt: -1 }).limit(20);
+        console.log('After generation, total challenges:', challenges.length);
+        const newWeeklyCount = challenges.filter(c => c.type === 'weekly').length;
+        console.log('Weekly challenges generated:', newWeeklyCount);
+      }
+    }
+
     return NextResponse.json({ challenges });
   } catch (error) {
     console.error('Error fetching challenges:', error);

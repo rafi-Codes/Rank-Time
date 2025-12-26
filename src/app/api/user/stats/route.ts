@@ -24,30 +24,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recent sessions for additional stats
-    const recentSessions = await Session.find({ userId: user._id })
+    const recentSessions = await Session.find({ user: user._id })
       .sort({ createdAt: -1 })
       .limit(10);
 
     // Calculate additional stats
-    const allSessions = await Session.find({ userId: user._id });
+    const allSessions = await Session.find({ user: user._id });
 
-    const totalTime = allSessions.reduce((sum, session) => sum + session.totalTime, 0);
-    const averageScore = allSessions.length > 0
-      ? allSessions.reduce((sum, session) => sum + session.score, 0) / allSessions.length
-      : 0;
+    const totalTime = allSessions.reduce((sum, session) => sum + (session.totalTime || 0), 0);
+    const totalScore = allSessions.reduce((sum, session) => sum + (session.score || 0), 0);
+    const totalRating = allSessions.reduce((sum, session) => sum + (session.problemRating || 0), 0);
 
-    const averageRating = allSessions.length > 0
-      ? allSessions.reduce((sum, session) => sum + session.problemRating, 0) / allSessions.length
-      : 0;
+    const averageScore = allSessions.length > 0 ? totalScore / allSessions.length : 0;
+    const averageRating = allSessions.length > 0 ? totalRating / allSessions.length : 0;
 
     // Calculate league progress
     const leagueThresholds = {
       'Beginner': 0,
-      'Intermediate': 500,
-      'Advanced': 1000,
-      'Expert': 2500,
-      'Master': 5000,
-      'Legend': 10000
+      'Intermediate': 1200,
+      'Advanced': 2500,
+      'Expert': 6000,
+      'Master': 12000,
+      'Legend': 25000
     };
 
     const leagues = Object.keys(leagueThresholds);
@@ -62,26 +60,26 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       user: {
-        name: user.name,
+        name: user.name || 'User',
         email: user.email,
-        usertag: user.usertag,
-        image: user.image,
-        totalScore: user.totalScore,
-        currentStreak: user.currentStreak,
-        maxStreak: user.maxStreak,
-        rank: user.rank,
-        league: user.league,
-        totalSessions: user.totalSessions
+        usertag: user.usertag || '',
+        image: user.image || null,
+        totalScore: user.totalScore || 0,
+        currentStreak: user.currentStreak || 0,
+        maxStreak: user.maxStreak || 0,
+        rank: user.rank || 0,
+        league: user.league || 'Beginner',
+        totalSessions: user.totalSessions || 0
       },
       additionalStats: {
-        totalTime,
-        averageScore: Math.round(averageScore),
-        averageRating: Math.round(averageRating),
-        leagueProgress: Math.min(100, Math.max(0, leagueProgress)),
+        totalTime: totalTime || 0,
+        averageScore: Math.round(averageScore || 0),
+        averageRating: Math.round(averageRating || 0),
+        leagueProgress: Math.min(100, Math.max(0, leagueProgress || 0)),
         nextLeague,
         nextThreshold
       },
-      recentSessions
+      recentSessions: recentSessions || []
     };
 
     return NextResponse.json(stats);

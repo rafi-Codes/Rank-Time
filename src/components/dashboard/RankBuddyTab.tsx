@@ -187,10 +187,22 @@ export default function RankBuddyTab() {
 
   const loadChallenges = async () => {
     try {
-      const response = await fetch('/api/user/challenges');
+      // Load all challenges (daily and weekly)
+      const response = await fetch('/api/user/challenges?type=all');
       if (response.ok) {
         const data = await response.json();
+        console.log('Loaded challenges:', data.challenges.length, 'total');
+        const weeklyCount = data.challenges.filter(c => c.type === 'weekly').length;
+        const dailyCount = data.challenges.filter(c => c.type === 'daily').length;
+        console.log(`Daily: ${dailyCount}, Weekly: ${weeklyCount}`);
         setChallenges(data.challenges);
+
+        // If no weekly challenges, try to generate them
+        if (weeklyCount === 0) {
+          console.log('No weekly challenges found, triggering generation...');
+          // Force refresh after a short delay to allow generation
+          setTimeout(() => loadChallenges(), 1000);
+        }
       }
     } catch (error) {
       console.error('Error loading challenges:', error);
@@ -390,119 +402,195 @@ export default function RankBuddyTab() {
     </div>
   );
 
-  const renderChallengesView = () => (
-    <div className="space-y-6">
-      {/* Daily/Weekly Challenges */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Trophy className="h-6 w-6 text-yellow-600" />
-            <span>Challenges</span>
-          </CardTitle>
-          <CardDescription>
-            Complete challenges to earn bonus points and unlock achievements!
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {challenges.map((challenge) => (
-              <Card key={challenge._id} className={`border-2 ${challenge.completed ? 'border-green-500' : 'border-gray-200'}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant={challenge.type === 'daily' ? 'default' : 'secondary'}>
-                      {challenge.type}
-                    </Badge>
-                    <Badge variant={
-                      challenge.difficulty === 'easy' ? 'default' :
-                      challenge.difficulty === 'medium' ? 'secondary' : 'destructive'
-                    }>
-                      {challenge.difficulty}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg">{challenge.title}</CardTitle>
-                  <CardDescription>{challenge.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-500" />
-                      <span className="text-sm font-medium">+{challenge.points + (challenge.bonusPoints || 0)} points</span>
-                    </div>
-                    {!challenge.completed && new Date(challenge.deadline) > new Date() && (
-                      <Button
-                        size="sm"
-                        onClick={() => completeChallenge(challenge._id)}
-                        className="text-xs"
-                      >
-                        Complete
-                      </Button>
-                    )}
-                    {challenge.completed && (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    )}
-                    {!challenge.completed && new Date(challenge.deadline) <= new Date() && (
-                      <XCircle className="h-5 w-5 text-red-500" />
-                    )}
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500">
-                      Category: {challenge.category}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Deadline: {new Date(challenge.deadline).toLocaleDateString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+  const renderChallengesView = () => {
+    const dailyChallenges = challenges.filter(c => c.type === 'daily').slice(0, 3);
+    const weeklyChallenges = challenges.filter(c => c.type === 'weekly').slice(0, 2);
 
-      {/* Badges */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Award className="h-6 w-6 text-purple-600" />
-            <span>Achievements</span>
-          </CardTitle>
-          <CardDescription>
-            Your earned badges and accomplishments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {badges.map((badge) => (
-              <div key={badge._id} className={`p-4 rounded-lg border-2 text-center ${
-                badge.earned ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 bg-gray-50 dark:bg-gray-800'
-              }`}>
-                <div className="text-2xl mb-2">{badge.icon}</div>
-                <h3 className={`font-medium ${badge.earned ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500'}`}>
-                  {badge.name}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {badge.description}
-                </p>
-                {!badge.earned && badge.progress !== undefined && badge.target && (
-                  <div className="mt-2">
-                    <Progress value={badge.progressPercentage || 0} className="h-1" />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {badge.progress}/{badge.target}
-                    </p>
+    return (
+      <div className="space-y-6">
+        {/* Total Challenges */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Trophy className="h-6 w-6 text-yellow-600" />
+              <span>Total Challenges</span>
+            </CardTitle>
+            <CardDescription>
+              Complete challenges to earn bonus points and unlock achievements!
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Daily Challenges Section */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3 text-blue-600 dark:text-blue-400">Daily Challenges</h3>
+              <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
+                {dailyChallenges.map((challenge) => (
+                  <Card key={challenge._id} className={`border-2 ${challenge.completed ? 'border-green-500' : 'border-gray-200'}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="default">
+                          Daily
+                        </Badge>
+                        <Badge variant={
+                          challenge.difficulty === 'easy' ? 'default' :
+                          challenge.difficulty === 'medium' ? 'secondary' : 'destructive'
+                        }>
+                          {challenge.difficulty}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                      <CardDescription>{challenge.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium">+{challenge.points + (challenge.bonusPoints || 0)} points</span>
+                        </div>
+                        {!challenge.completed && new Date(challenge.deadline) > new Date() && (
+                          <Button
+                            size="sm"
+                            onClick={() => completeChallenge(challenge._id)}
+                            className="text-xs"
+                          >
+                            Complete
+                          </Button>
+                        )}
+                        {challenge.completed && (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        )}
+                        {!challenge.completed && new Date(challenge.deadline) <= new Date() && (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500">
+                          Category: {challenge.category}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Deadline: {new Date(challenge.deadline).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {dailyChallenges.length === 0 && (
+                  <div className="col-span-full text-center py-4 text-gray-500">
+                    No daily challenges available
                   </div>
-                )}
-                {badge.earned && badge.earnedAt && (
-                  <p className="text-xs text-green-600 mt-2">
-                    Earned {new Date(badge.earnedAt).toLocaleDateString()}
-                  </p>
                 )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            </div>
+
+            {/* Weekly Challenges Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-purple-600 dark:text-purple-400">Weekly Challenges</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {weeklyChallenges.map((challenge) => (
+                  <Card key={challenge._id} className={`border-2 ${challenge.completed ? 'border-green-500' : 'border-gray-200'}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary">
+                          Weekly
+                        </Badge>
+                        <Badge variant={
+                          challenge.difficulty === 'easy' ? 'default' :
+                          challenge.difficulty === 'medium' ? 'secondary' : 'destructive'
+                        }>
+                          {challenge.difficulty}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                      <CardDescription>{challenge.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium">+{challenge.points + (challenge.bonusPoints || 0)} points</span>
+                        </div>
+                        {!challenge.completed && new Date(challenge.deadline) > new Date() && (
+                          <Button
+                            size="sm"
+                            onClick={() => completeChallenge(challenge._id)}
+                            className="text-xs"
+                          >
+                            Complete
+                          </Button>
+                        )}
+                        {challenge.completed && (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        )}
+                        {!challenge.completed && new Date(challenge.deadline) <= new Date() && (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500">
+                          Category: {challenge.category}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Deadline: {new Date(challenge.deadline).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {weeklyChallenges.length === 0 && (
+                  <div className="col-span-full text-center py-4 text-gray-500">
+                    No weekly challenges available
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Badges */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Award className="h-6 w-6 text-purple-600" />
+              <span>Achievements</span>
+            </CardTitle>
+            <CardDescription>
+              Your earned badges and accomplishments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              {badges.map((badge) => (
+                <div key={badge._id} className={`p-4 rounded-lg border-2 text-center ${
+                  badge.earned ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 bg-gray-50 dark:bg-gray-800'
+                }`}>
+                  <div className="text-2xl mb-2">{badge.icon}</div>
+                  <h3 className={`font-medium ${badge.earned ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500'}`}>
+                    {badge.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {badge.description}
+                  </p>
+                  {!badge.earned && badge.progress !== undefined && badge.target && (
+                    <div className="mt-2">
+                      <Progress value={badge.progressPercentage || 0} className="h-1" />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {badge.progress}/{badge.target}
+                      </p>
+                    </div>
+                  )}
+                  {badge.earned && badge.earnedAt && (
+                    <p className="text-xs text-green-600 mt-2">
+                      Earned {new Date(badge.earnedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const renderAnalyticsView = () => (
     <div className="space-y-6">

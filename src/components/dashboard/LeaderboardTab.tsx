@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Medal, Award, Crown } from 'lucide-react';
+import { Trophy, Medal, Award, Crown, User } from 'lucide-react';
 
 interface LeaderboardUser {
   _id: string;
@@ -23,14 +24,22 @@ interface LeaderboardUser {
 }
 
 export default function LeaderboardTab() {
+  const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('totalScore');
   const [timeRange, setTimeRange] = useState('all');
+  const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
 
   useEffect(() => {
     fetchLeaderboard();
   }, [sortBy, timeRange]);
+
+  useEffect(() => {
+    if (session?.user?.email && !currentUser) {
+      fetchCurrentUserStats();
+    }
+  }, [session]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -38,11 +47,46 @@ export default function LeaderboardTab() {
       if (response.ok) {
         const data = await response.json();
         setLeaderboard(data);
+
+        // Find current user in leaderboard
+        if (session?.user?.email) {
+          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
+          if (userInLeaderboard) {
+            setCurrentUser(userInLeaderboard);
+          } else {
+            // If not in top leaderboard, fetch user stats separately
+            await fetchCurrentUserStats();
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentUserStats = async () => {
+    try {
+      const response = await fetch('/api/user/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser({
+          _id: data.user.email, // Use email as ID since we don't have the actual user ID
+          name: data.user.name,
+          email: data.user.email,
+          usertag: data.user.usertag,
+          totalScore: data.user.totalScore,
+          currentStreak: data.user.currentStreak,
+          maxStreak: data.user.maxStreak,
+          rank: data.user.rank,
+          league: data.user.league,
+          totalSessions: data.user.totalSessions,
+          averageScore: data.additionalStats.averageScore
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching current user stats:', error);
     }
   };
 
@@ -188,14 +232,47 @@ export default function LeaderboardTab() {
       {/* Your Ranking */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Ranking</CardTitle>
+          <CardTitle className="flex items-center">
+            <User className="w-5 h-5 mr-2" />
+            Your Ranking
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">
-              Your current ranking will be displayed here once you have completed sessions.
-            </p>
-          </div>
+          {currentUser ? (
+            <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg font-bold text-blue-600">#{currentUser.rank}</span>
+                  {getRankIcon(currentUser.rank)}
+                </div>
+                <div>
+                  <h3 className="font-semibold">{currentUser.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">@{currentUser.usertag || (currentUser.email ? currentUser.email.split('@')[0] : 'user')}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <Badge className={getLeagueColor(currentUser.league)}>
+                  {currentUser.league}
+                </Badge>
+
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Score: {currentUser.totalScore.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {currentUser.totalSessions} sessions • {currentUser.currentStreak} day streak
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-600 dark:text-gray-400">
+                Loading your ranking information...
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -38,8 +38,8 @@ const UserSchema = new Schema<IUser>(
     lastSessionDate: { type: Date },
   league: {
     type: String,
-    enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master', 'Legend'],
-    default: 'Beginner',
+    enum: ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster'],
+    default: 'bronze',
   },
     rank: { type: Number, default: 0 },
     totalSessions: { type: Number, default: 0 },

@@ -35,11 +35,11 @@ interface UserStats {
 
 const LEAGUE_THRESHOLDS = {
   'Beginner': 0,
-  'Intermediate': 500,
-  'Advanced': 1000,
-  'Expert': 2500,
-  'Master': 5000,
-  'Legend': 10000
+  'Intermediate': 1200,
+  'Advanced': 2500,
+  'Expert': 6000,
+  'Master': 12000,
+  'Legend': 25000
 };
 
 const LEAGUE_COLORS = {
@@ -329,7 +329,7 @@ export default function ProfileTab() {
               <Target className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Rating</p>
-                <p className="text-2xl font-bold">{Math.round(stats.additionalStats.averageRating)}</p>
+                <p className="text-2xl font-bold">{stats.additionalStats?.averageRating ? Math.round(stats.additionalStats.averageRating) : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -341,8 +341,8 @@ export default function ProfileTab() {
               <Calendar className="h-8 w-8 text-green-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Time</p>
-                <p className="text-2xl font-bold">{formatTime(stats.additionalStats.totalTime)}</p>
-                <p className="text-xs text-gray-500">{stats.user.totalSessions} sessions</p>
+                <p className="text-2xl font-bold">{stats.additionalStats?.totalTime ? formatTime(stats.additionalStats.totalTime) : '0m'}</p>
+                <p className="text-xs text-gray-500">{stats.user.totalSessions || 0} sessions</p>
               </div>
             </div>
           </CardContent>
