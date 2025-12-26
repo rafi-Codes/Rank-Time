@@ -107,6 +107,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     console.log('Dashboard useEffect - status:', status, 'session:', !!session);
+    console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
     if (status === 'loading') {
       console.log('Still loading, waiting...');
       return; // Still loading
@@ -163,6 +165,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Debug info */}
+      <div className="bg-red-100 dark:bg-red-900 p-4 m-4 rounded text-sm border">
+        <h3 className="font-bold mb-2">Debug Info:</h3>
+        <p>Status: {status}</p>
+        <p>Session: {session ? 'Yes' : 'No'}</p>
+        <p>NEXTAUTH_URL: {process.env.NEXTAUTH_URL || 'Not set'}</p>
+        <p>NODE_ENV: {process.env.NODE_ENV || 'Not set'}</p>
+        <p>User: {session?.user?.email || 'None'}</p>
+      </div>
+
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
