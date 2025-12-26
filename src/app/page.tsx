@@ -103,9 +103,14 @@ export default function Home() {
       <footer className="border-t py-8">
         <div className="container px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} RankTime. All rights reserved.
-            </p>
+            <div className="text-center md:text-left">
+              <p className="text-sm text-muted-foreground">
+                © {new Date().getFullYear()} RankTime. All rights reserved.
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Developed by Rafiul Hasan, CSE, BRACU
+              </p>
+            </div>
             <div className="flex items-center space-x-4">
               <Link href="/privacy" className="text-sm text-muted-foreground hover:underline">
                 Privacy
