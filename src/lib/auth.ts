@@ -7,7 +7,6 @@ import { connectToDatabase } from '@/lib/db';
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
-  baseUrl: process.env.NEXTAUTH_URL,
   providers: [
     CredentialsProvider({
       name: 'Credentials',
