@@ -34,18 +34,36 @@ export default function LoginPage() {
     setSuccess('');
 
     const result = await signIn('credentials', {
-      redirect: true,
+      redirect: false, // Change back to false to handle errors
       email,
       password,
-      callbackUrl: '/dashboard',
     });
 
-    // If we reach here, sign in failed
     if (result?.error) {
+      console.error('Sign in error:', result.error);
       setError(result.error);
       setIsLoading(false);
+    } else if (result?.ok) {
+      console.log('Sign in successful, checking session...');
+      // Wait for session to be established
+      setTimeout(async () => {
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+        console.log('Session after sign in:', sessionData);
+        if (sessionData?.user) {
+          console.log('Session established, redirecting to dashboard');
+          router.push('/dashboard');
+        } else {
+          console.error('Session not established');
+          setError('Session not established after login');
+          setIsLoading(false);
+        }
+      }, 1000);
+    } else {
+      console.error('Sign in result:', result);
+      setError('Unknown sign in error');
+      setIsLoading(false);
     }
-    // If successful, NextAuth will handle the redirect
   }
 
   return (
