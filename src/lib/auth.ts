@@ -8,6 +8,7 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
   secret: process.env.NEXTAUTH_SECRET,
   useSecureCookies: process.env.NODE_ENV === 'production',
+  baseUrl: process.env.NEXTAUTH_URL,
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -85,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
@@ -94,6 +96,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
         maxAge: 24 * 60 * 60, // 24 hours
       },
     },
@@ -104,6 +107,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? new URL(process.env.NEXTAUTH_URL || '').hostname : undefined,
       },
     },
   },
