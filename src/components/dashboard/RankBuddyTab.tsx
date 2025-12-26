@@ -406,14 +406,21 @@ export default function RankBuddyTab() {
     const dailyChallenges = challenges.filter(c => c.type === 'daily').slice(0, 3);
     const weeklyChallenges = challenges.filter(c => c.type === 'weekly').slice(0, 2);
 
+    const clampPoints = (ch: any) => {
+      const total = (ch.points || 0) + (ch.bonusPoints || 0);
+      if (ch.type === 'daily') return Math.min(total, 5);
+      if (ch.type === 'weekly') return Math.min(total, 20);
+      return total;
+    };
+
     return (
       <div className="space-y-6">
-        {/* Total Challenges */}
+        {/* Challenges */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Trophy className="h-6 w-6 text-yellow-600" />
-              <span>Total Challenges</span>
+              <span>Challenges</span>
             </CardTitle>
             <CardDescription>
               Complete challenges to earn bonus points and unlock achievements!
@@ -445,7 +452,7 @@ export default function RankBuddyTab() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1">
                           <Star className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm font-medium">+{challenge.points + (challenge.bonusPoints || 0)} points</span>
+                          <span className="text-sm font-medium">+{clampPoints(challenge)} points</span>
                         </div>
                         {!challenge.completed && new Date(challenge.deadline) > new Date() && (
                           <Button
@@ -507,7 +514,7 @@ export default function RankBuddyTab() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1">
                           <Star className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm font-medium">+{challenge.points + (challenge.bonusPoints || 0)} points</span>
+                          <span className="text-sm font-medium">+{clampPoints(challenge)} points</span>
                         </div>
                         {!challenge.completed && new Date(challenge.deadline) > new Date() && (
                           <Button
