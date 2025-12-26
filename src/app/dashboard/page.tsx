@@ -134,12 +134,8 @@ export default function Dashboard() {
 
   if (status === 'loading' && !loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Status: {status}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -149,8 +145,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="text-red-600 dark:text-red-400 text-xl mb-4">Loading Timeout</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Session loading took too long. This might be due to environment configuration issues.</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">Status: {status}, Timeout: {loadingTimeout ? 'Yes' : 'No'}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Session loading took too long. Please check your environment variables.</p>
           <button
             onClick={() => router.push('/login')}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -163,15 +158,7 @@ export default function Dashboard() {
   }
 
   if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="text-red-600 dark:text-red-400 text-xl mb-4">Session Lost</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Redirecting to login...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500">Status: {status}, Session: {session ? 'Yes' : 'No'}</p>
-        </div>
-      </div>
-    );
+    return null; // Will redirect in useEffect
   }
 
   return (
