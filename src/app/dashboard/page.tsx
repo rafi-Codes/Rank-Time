@@ -4,6 +4,7 @@
 import { signOut, useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import type { Session } from 'next-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,7 +79,7 @@ export default function Dashboard() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
-  const [localSession, setLocalSession] = useState(null);
+  const [localSession, setLocalSession] = useState<Session | null>(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Load active tab from localStorage on mount
