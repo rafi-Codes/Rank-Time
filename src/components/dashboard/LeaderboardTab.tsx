@@ -42,10 +42,11 @@ export default function LeaderboardTab() {
       fetchCurrentUserStats();
     } else if (status === 'unauthenticated') {
       console.log('User is not authenticated');
+      setCurrentUser(null); // Reset currentUser if user logs out
     } else if (status === 'loading') {
       console.log('Session is loading...');
     }
-  }, [session, status, currentUser]);
+  }, [status, session]); // Removed currentUser from dependencies
 
   const fetchLeaderboard = async () => {
     try {
@@ -290,10 +291,18 @@ export default function LeaderboardTab() {
               </div>
             </div>
           ) : (
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <p className="text-gray-600 dark:text-gray-400">
                 Loading your ranking information...
               </p>
+              <Button
+                onClick={() => fetchCurrentUserStats(0)}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Retry Loading
+              </Button>
             </div>
           )}
         </CardContent>
