@@ -32,6 +32,8 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
   }, []);
 
   const items = [
+    { label: 'Leaderboard', value: 'leaderboard' },
+    { label: 'Rank Buddy', value: 'rankbuddy' },
     { label: 'Tracksheet', value: 'tracksheet' },
     { label: 'Graphs', value: 'graphs' },
     { label: 'Codeforces', value: 'codeforces' },
@@ -200,10 +202,10 @@ export default function Dashboard() {
                 onClick={() => signOut()}
                 variant="outline"
                 size="sm"
-                className="text-xs sm:text-sm px-2 sm:px-3"
+                className="text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9"
               >
-                <span className="hidden sm:inline">Sign out</span>
                 <span className="sm:hidden">Out</span>
+                <span className="hidden sm:inline">Sign out</span>
               </Button>
             </div>
           </div>
@@ -222,12 +224,12 @@ export default function Dashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Mobile: Stack controls vertically */}
           <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap w-full sm:w-auto order-2 sm:order-1">
-              <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Stopwatch</TabsTrigger>
-              <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Timer</TabsTrigger>
-              <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Profile</TabsTrigger>
-              <TabsTrigger value="leaderboard" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Leaderboard</TabsTrigger>
-              <TabsTrigger value="rankbuddy" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Rank Buddy</TabsTrigger>
+            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap w-full sm:w-auto order-2 sm:order-1 overflow-x-auto">
+              <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Stopwatch</TabsTrigger>
+              <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Timer</TabsTrigger>
+              <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Profile</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="hidden sm:inline-flex text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Leaderboard</TabsTrigger>
+              <TabsTrigger value="rankbuddy" className="hidden sm:inline-flex text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Rank Buddy</TabsTrigger>
             </TabsList>
 
             {/* Controls section - stack on mobile */}
