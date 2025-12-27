@@ -198,7 +198,6 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              <ModeToggle />
               <Button
                 onClick={() => signOut()}
                 variant="outline"
