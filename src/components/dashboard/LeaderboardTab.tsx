@@ -43,6 +43,7 @@ export default function LeaderboardTab() {
 
   const fetchLeaderboard = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
       if (response.ok) {
         const data = await response.json();

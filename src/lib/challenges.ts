@@ -33,7 +33,7 @@ async function generateAIWeeklyChallenges(userId: any) {
     }).sort({ createdAt: -1 }).limit(20);
 
     const recentSessions = await Session.find({
-      userId,
+      user: userId,
       createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 }).limit(10);
 

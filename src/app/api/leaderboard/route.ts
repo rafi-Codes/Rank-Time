@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Calculate average score for all users
     for (const user of users) {
       if (!user.averageScore) {
-        const sessions = await Session.find({ userId: user._id });
+        const sessions = await Session.find({ user: user._id });
         user.averageScore = sessions.length > 0
           ? sessions.reduce((sum, session) => sum + session.score, 0) / sessions.length
           : 0;
