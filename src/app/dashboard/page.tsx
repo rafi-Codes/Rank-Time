@@ -54,7 +54,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
       </button>
 
       {open && (
-        <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+        <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-w-[calc(100vw-2rem)]">
           <div className="py-1">
             {items.map((it) => (
               <button
@@ -166,37 +166,35 @@ export default function Dashboard() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('stopwatch')}>
-              <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
+            <div className="flex items-center space-x-1 sm:space-x-2 cursor-pointer min-w-0 flex-1" onClick={() => setActiveTab('stopwatch')}>
+              <img src="/logo.svg" alt="RankTime Logo" className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
+              <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-white truncate">RankTime</h1>
             </div>
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {/* Mobile: Show only sign out button */}
-              <div className="hidden md:block">
-                <div className="flex items-center space-x-2">
-                  {safeSession.user?.image ? (
-                    <img
-                      src={safeSession.user.image}
-                      alt="Profile Avatar"
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300 dark:border-gray-600"
-                    />
-                  ) : (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">
-                        {(safeSession.user?.name?.charAt(0) || safeSession.user?.email?.charAt(0) || 'U').toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <span className="hidden lg:block text-sm text-gray-700 dark:text-gray-300">
-                    Welcome,{' '}
-                    <button
-                      onClick={() => setActiveTab('profile')}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
-                    >
-                      {safeSession.user?.name || safeSession.user?.email}
-                    </button>
-                  </span>
-                </div>
+              <div className="hidden md:flex items-center space-x-2">
+                {safeSession.user?.image ? (
+                  <img
+                    src={safeSession.user.image}
+                    alt="Profile Avatar"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300 dark:border-gray-600"
+                  />
+                ) : (
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">
+                      {(safeSession.user?.name?.charAt(0) || safeSession.user?.email?.charAt(0) || 'U').toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <span className="hidden lg:block text-sm text-gray-700 dark:text-gray-300">
+                  Welcome,{' '}
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                  >
+                    {safeSession.user?.name || safeSession.user?.email}
+                  </button>
+                </span>
               </div>
               <Button
                 onClick={() => signOut()}
@@ -213,7 +211,7 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="mb-4 sm:mb-6 lg:mb-8">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
           <p className="mt-1 sm:mt-2 text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400">
@@ -222,17 +220,18 @@ export default function Dashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <div className="relative">
-            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap">
-              <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Stopwatch</TabsTrigger>
-              <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Timer</TabsTrigger>
-              <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Profile</TabsTrigger>
-              <TabsTrigger value="leaderboard" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Leaderboard</TabsTrigger>
-              <TabsTrigger value="rankbuddy" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3">Rank Buddy</TabsTrigger>
+          {/* Mobile: Stack controls vertically */}
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap w-full sm:w-auto order-2 sm:order-1">
+              <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Stopwatch</TabsTrigger>
+              <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Timer</TabsTrigger>
+              <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Profile</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Leaderboard</TabsTrigger>
+              <TabsTrigger value="rankbuddy" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 min-w-0 flex-1 sm:flex-none">Rank Buddy</TabsTrigger>
             </TabsList>
 
-            {/* More menu for less-used tabs */}
-            <div className="absolute right-0 top-0 flex items-center space-x-1 sm:space-x-2">
+            {/* Controls section - stack on mobile */}
+            <div className="flex items-center justify-center space-x-2 sm:justify-end order-1 sm:order-2">
               <ModeToggle />
               <MoreMenu
                 onSelect={(val: string) => {
