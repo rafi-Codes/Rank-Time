@@ -11,15 +11,11 @@ export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('User stats API called');
     const session = await getServerSession(authOptions);
-    console.log('Session:', session);
     if (!session?.user?.email) {
-      console.log('No session or email found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Connecting to database...');
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email });
