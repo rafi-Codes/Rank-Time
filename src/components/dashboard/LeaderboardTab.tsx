@@ -36,7 +36,9 @@ export default function LeaderboardTab() {
   }, [sortBy, timeRange]);
 
   useEffect(() => {
+    console.log('Session status:', status, 'Session data:', session);
     if (status === 'authenticated' && session?.user?.email && !currentUser) {
+      console.log('Calling fetchCurrentUserStats');
       fetchCurrentUserStats();
     }
   }, [session, status]);
@@ -69,9 +71,12 @@ export default function LeaderboardTab() {
 
   const fetchCurrentUserStats = async () => {
     try {
+      console.log('Fetching current user stats...');
       const response = await fetch('/api/user/stats');
+      console.log('API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('API response data:', data);
         setCurrentUser({
           _id: data.user.email, // Use email as ID since we don't have the actual user ID
           name: data.user.name,
@@ -85,8 +90,11 @@ export default function LeaderboardTab() {
           totalSessions: data.user.totalSessions,
           averageScore: data.additionalStats.averageScore
         });
+        console.log('Current user set:', data.user);
       } else {
         console.error('Failed to fetch user stats:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error fetching current user stats:', error);
