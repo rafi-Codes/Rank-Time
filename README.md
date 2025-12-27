@@ -8,7 +8,7 @@
 
 RankTime is a comprehensive **competitive programming tracking platform** designed to help programmers analyze their deliberate practice, track progress through gamification, and gain data-driven insights into their coding journey.
 
-![RankTime Dashboard](https://via.placeholder.com/800x400/1a1a1a/ffffff?text=RankTime+Dashboard+Preview)
+![RankTime Dashboard](https://rank-time.vercel.app/dashboard)
 
 ---
 
