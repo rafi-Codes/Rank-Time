@@ -24,7 +24,7 @@ interface LeaderboardUser {
 }
 
 export default function LeaderboardTab() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('totalScore');
@@ -36,10 +36,10 @@ export default function LeaderboardTab() {
   }, [sortBy, timeRange]);
 
   useEffect(() => {
-    if (session?.user?.email && !currentUser) {
+    if (status === 'authenticated' && session?.user?.email && !currentUser) {
       fetchCurrentUserStats();
     }
-  }, [session]);
+  }, [session, status]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -85,6 +85,8 @@ export default function LeaderboardTab() {
           totalSessions: data.user.totalSessions,
           averageScore: data.additionalStats.averageScore
         });
+      } else {
+        console.error('Failed to fetch user stats:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching current user stats:', error);

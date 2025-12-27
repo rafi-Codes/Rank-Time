@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .limit(10);
 
+    // Calculate current rank based on totalScore
+    const allUsers = await User.find({}).select('totalScore');
+    const sortedUsers = allUsers.sort((a, b) => b.totalScore - a.totalScore);
+    const currentUserRank = sortedUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
     // Calculate additional stats
     const allSessions = await Session.find({ user: user._id });
 
@@ -67,7 +72,7 @@ export async function GET(request: NextRequest) {
         totalScore: user.totalScore || 0,
         currentStreak: user.currentStreak || 0,
         maxStreak: user.maxStreak || 0,
-        rank: user.rank || 0,
+        rank: currentUserRank,
         league: user.league || 'Beginner',
         totalSessions: user.totalSessions || 0
       },
