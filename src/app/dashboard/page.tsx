@@ -19,6 +19,7 @@ import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
 import RankBuddyTab from '@/components/dashboard/RankBuddyTab';
 import { ModeToggle } from '@/components/mode-toggle';
+import { LogOut } from 'lucide-react';
 
 function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -202,9 +203,9 @@ export default function Dashboard() {
                 onClick={() => signOut()}
                 variant="outline"
                 size="sm"
-                className="text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9"
+                className="text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-9"
               >
-                <span className="sm:hidden">Out</span>
+                <LogOut className="h-4 w-4 sm:hidden" />
                 <span className="hidden sm:inline">Sign out</span>
               </Button>
             </div>
@@ -223,7 +224,7 @@ export default function Dashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Mobile: Stack controls vertically */}
-          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
             <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap w-full sm:w-auto order-2 sm:order-1 overflow-x-auto">
               <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Stopwatch</TabsTrigger>
               <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Timer</TabsTrigger>
@@ -232,14 +233,18 @@ export default function Dashboard() {
               <TabsTrigger value="rankbuddy" className="hidden sm:inline-flex text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Rank Buddy</TabsTrigger>
             </TabsList>
 
-            {/* Controls section - stack on mobile */}
-            <div className="flex items-center justify-center space-x-2 sm:justify-end order-1 sm:order-2">
-              <ModeToggle />
-              <MoreMenu
-                onSelect={(val: string) => {
-                  setActiveTab(val);
-                }}
-              />
+            {/* Controls section - right aligned on mobile */}
+            <div className="flex items-center justify-end space-x-1 sm:space-x-2 order-1 sm:order-2">
+              <div className="scale-75 sm:scale-100">
+                <ModeToggle />
+              </div>
+              <div className="scale-75 sm:scale-100">
+                <MoreMenu
+                  onSelect={(val: string) => {
+                    setActiveTab(val);
+                  }}
+                />
+              </div>
             </div>
           </div>
 
