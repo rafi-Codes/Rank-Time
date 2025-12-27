@@ -36,17 +36,31 @@ export default function LeaderboardTab() {
   }, [sortBy, timeRange]);
 
   useEffect(() => {
-    console.log('Session status:', status, 'Session data:', session);
     if (status === 'authenticated' && session?.user?.email && !currentUser) {
-      console.log('Calling fetchCurrentUserStats');
       fetchCurrentUserStats();
     } else if (status === 'unauthenticated') {
-      console.log('User is not authenticated');
       setCurrentUser(null); // Reset currentUser if user logs out
-    } else if (status === 'loading') {
-      console.log('Session is loading...');
     }
-  }, [status, session]); // Removed currentUser from dependencies
+  }, [status, session]);
+
+  // Additional effect to handle delayed session loading
+  useEffect(() => {
+    if (!currentUser) {
+      // Check immediately
+      if (status === 'authenticated' && session?.user?.email) {
+        fetchCurrentUserStats();
+      } else {
+        // Set up a check after a short delay in case session loads later
+        const timer = setTimeout(() => {
+          if (status === 'authenticated' && session?.user?.email && !currentUser) {
+            fetchCurrentUserStats();
+          }
+        }, 2000); // Check after 2 seconds
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []); // Only run on mount
 
   const fetchLeaderboard = async () => {
     try {
@@ -76,12 +90,9 @@ export default function LeaderboardTab() {
 
   const fetchCurrentUserStats = async (retryCount = 0) => {
     try {
-      console.log('Fetching current user stats... (attempt', retryCount + 1, ')');
       const response = await fetch('/api/user/stats');
-      console.log('API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log('API response data:', data);
         setCurrentUser({
           _id: data.user.email, // Use email as ID since we don't have the actual user ID
           name: data.user.name,
@@ -95,20 +106,15 @@ export default function LeaderboardTab() {
           totalSessions: data.user.totalSessions,
           averageScore: data.additionalStats.averageScore
         });
-        console.log('Current user set:', data.user);
       } else if (response.status === 401 && retryCount < 2) {
         // If unauthorized, wait a bit and retry (session might still be loading)
-        console.log('Unauthorized, retrying in 2 seconds...');
         setTimeout(() => fetchCurrentUserStats(retryCount + 1), 2000);
       } else {
         console.error('Failed to fetch user stats:', response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error fetching current user stats:', error);
       if (retryCount < 2) {
-        console.log('Retrying in 2 seconds...');
         setTimeout(() => fetchCurrentUserStats(retryCount + 1), 2000);
       }
     }
