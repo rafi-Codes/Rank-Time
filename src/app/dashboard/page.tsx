@@ -225,7 +225,7 @@ export default function Dashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           {/* Mobile: Stack controls vertically */}
           <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
-            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 mx-auto justify-center flex-wrap w-full sm:w-auto order-2 sm:order-1 overflow-x-auto">
+            <TabsList className="inline-flex h-auto items-center p-1 sm:p-2 gap-1 sm:gap-2 lg:gap-4 justify-center sm:justify-start flex-wrap w-full sm:w-auto order-2 sm:order-1 overflow-x-auto">
               <TabsTrigger value="stopwatch" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Stopwatch</TabsTrigger>
               <TabsTrigger value="timer" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Timer</TabsTrigger>
               <TabsTrigger value="profile" className="text-xs sm:text-sm lg:text-base px-2 sm:px-4 py-1 sm:py-2 lg:px-6 lg:py-3 whitespace-nowrap flex-shrink-0">Profile</TabsTrigger>
