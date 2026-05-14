@@ -19,6 +19,8 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
   // eslint-disable-next-line no-var
   var _mongooseConn: Promise<typeof mongoose> | undefined;
+  // eslint-disable-next-line no-var
+  var _challengeSchedulerInitialized: boolean | undefined;
 }
 
 let client: MongoClient;
@@ -70,9 +72,18 @@ export default async function connectDB() {
 // Initialize challenge scheduler when DB module is loaded
 try {
   // import lazily to avoid cyclic imports during build
-  const { initChallengeScheduler } = require('./challengeScheduler');
-  if (initChallengeScheduler) {
-    initChallengeScheduler();
+  // Guard with a global flag so the scheduler is only initialized once.
+  // Also require explicit env var to avoid initializing during Next.js build/static rendering.
+  if (process.env.ENABLE_SCHEDULER === 'true' && !global._challengeSchedulerInitialized) {
+    const { initChallengeScheduler } = require('./challengeScheduler');
+    if (initChallengeScheduler) {
+      global._challengeSchedulerInitialized = true;
+      try {
+        initChallengeScheduler();
+      } catch (e) {
+        console.error('Failed to initialize challenge scheduler:', e);
+      }
+    }
   }
 } catch (err) {
   // Scheduler initialization failures should not break DB connection

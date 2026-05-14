@@ -163,7 +163,7 @@ export default function VerifyOTPPage() {
             </div>
             <CardTitle className="text-2xl">Verify Your Email</CardTitle>
             <CardDescription>
-              We've sent a 4-digit code to <strong>{email}</strong>
+              We have sent a 4-digit code to <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
 
@@ -222,8 +222,8 @@ export default function VerifyOTPPage() {
             </form>
 
             <div className="mt-6 text-center space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Didn't receive the code?
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                Did not receive the code?
               </p>
               <Button
                 variant="outline"

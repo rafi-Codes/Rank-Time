@@ -1,7 +1,7 @@
 // src/components/dashboard/CodeforcesTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,27 +65,27 @@ export default function CodeforcesTab() {
   const [connectedHandle, setConnectedHandle] = useState<string | null>(null);
 
   useEffect(() => {
-    checkConnectionStatus();
-  }, [session]);
+    const checkConnectionStatus = async () => {
+      if (!session?.user?.email) return;
 
-  const checkConnectionStatus = async () => {
-    if (!session?.user?.email) return;
-
-    try {
-      const response = await fetch('/api/user/codeforces-status');
-      if (response.ok) {
-        const data = await response.json();
-        setIsConnected(data.isConnected);
-        setConnectedHandle(data.handle);
-        if (data.isConnected && data.handle) {
-          // Auto-fetch data for connected users
-          fetchCodeforcesData(data.handle);
+      try {
+        const response = await fetch('/api/user/codeforces-status');
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.isConnected);
+          setConnectedHandle(data.handle);
+          if (data.isConnected && data.handle) {
+            // Auto-fetch data for connected users
+            fetchCodeforcesData(data.handle);
+          }
         }
+      } catch (error) {
+        console.error('Error checking connection status:', error);
       }
-    } catch (error) {
-      console.error('Error checking connection status:', error);
-    }
-  };
+    };
+
+    checkConnectionStatus();
+  }, [session, fetchCodeforcesData]);
 
   const connectCodeforces = async () => {
     if (!handle.trim()) {
@@ -138,7 +138,7 @@ export default function CodeforcesTab() {
     }
   };
 
-  const fetchCodeforcesData = async (userHandle?: string) => {
+  const fetchCodeforcesData = useCallback(async (userHandle?: string) => {
     const targetHandle = userHandle || handle.trim() || connectedHandle;
     if (!targetHandle) {
       setError('No handle available');
@@ -163,7 +163,7 @@ export default function CodeforcesTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [handle, connectedHandle]);
 
   const getRankColor = (rank?: string) => {
     if (!rank) return 'bg-gray-500';
@@ -438,7 +438,7 @@ export default function CodeforcesTab() {
           <CardContent>
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <p>1. Enter your Codeforces handle in the input field above</p>
-              <p>2. Click "Fetch Data" to retrieve your profile and submission statistics</p>
+              <p>2. Click Fetch Data to retrieve your profile and submission statistics</p>
               <p>3. View your rating, rank, solved problems, and submission breakdown</p>
               <p>4. Data is fetched directly from the Codeforces API</p>
             </div>

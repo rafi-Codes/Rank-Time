@@ -1,7 +1,7 @@
 // src/components/dashboard/LeaderboardTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,64 +31,7 @@ export default function LeaderboardTab() {
   const [timeRange, setTimeRange] = useState('all');
   const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [sortBy, timeRange]);
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email && !currentUser) {
-      fetchCurrentUserStats();
-    } else if (status === 'unauthenticated') {
-      setCurrentUser(null); // Reset currentUser if user logs out
-    }
-  }, [status, session]);
-
-  // Additional effect to handle delayed session loading
-  useEffect(() => {
-    if (!currentUser) {
-      // Check immediately
-      if (status === 'authenticated' && session?.user?.email) {
-        fetchCurrentUserStats();
-      } else {
-        // Set up a check after a short delay in case session loads later
-        const timer = setTimeout(() => {
-          if (status === 'authenticated' && session?.user?.email && !currentUser) {
-            fetchCurrentUserStats();
-          }
-        }, 2000); // Check after 2 seconds
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []); // Only run on mount
-
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLeaderboard(data);
-
-        // Find current user in leaderboard
-        if (session?.user?.email) {
-          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
-          if (userInLeaderboard) {
-            setCurrentUser(userInLeaderboard);
-          } else {
-            // If not in top leaderboard, fetch user stats separately
-            await fetchCurrentUserStats();
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCurrentUserStats = async (retryCount = 0) => {
+  const fetchCurrentUserStats = useCallback(async (retryCount = 0) => {
     try {
       const response = await fetch('/api/user/stats');
       if (response.ok) {
@@ -118,7 +61,66 @@ export default function LeaderboardTab() {
         setTimeout(() => fetchCurrentUserStats(retryCount + 1), 2000);
       }
     }
-  };
+  }, []);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data);
+
+        // Find current user in leaderboard
+        if (session?.user?.email) {
+          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
+          if (userInLeaderboard) {
+            setCurrentUser(userInLeaderboard);
+          } else {
+            // If not in top leaderboard, fetch user stats separately
+            await fetchCurrentUserStats();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [sortBy, timeRange, session?.user?.email, fetchCurrentUserStats]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.email && !currentUser) {
+      fetchCurrentUserStats();
+    } else if (status === 'unauthenticated') {
+      setCurrentUser(null); // Reset currentUser if user logs out
+    }
+  }, [status, session, currentUser, fetchCurrentUserStats]);
+
+  // Additional effect to handle delayed session loading
+  useEffect(() => {
+    if (!currentUser) {
+      // Check immediately
+      if (status === 'authenticated' && session?.user?.email) {
+        fetchCurrentUserStats();
+      } else {
+        // Set up a check after a short delay in case session loads later
+        const timer = setTimeout(() => {
+          if (status === 'authenticated' && session?.user?.email && !currentUser) {
+            fetchCurrentUserStats();
+          }
+        }, 2000); // Check after 2 seconds
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [status, session, currentUser, fetchCurrentUserStats]); // Run on mount and when session/status change
+
+  // fetchLeaderboard and fetchCurrentUserStats are defined above using useCallback
 
   const getRankIcon = (position: number) => {
     switch (position) {

@@ -1,7 +1,7 @@
 // src/components/dashboard/GraphsTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,11 +33,7 @@ export default function GraphsTab() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
 
-  useEffect(() => {
-    fetchGraphData();
-  }, [timeRange]);
-
-  const fetchGraphData = async () => {
+  const fetchGraphData = useCallback(async () => {
     try {
       const response = await fetch(`/api/sessions/graph?days=${timeRange}`);
       if (response.ok) {
@@ -49,7 +45,11 @@ export default function GraphsTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
+
+  useEffect(() => {
+    fetchGraphData();
+  }, [fetchGraphData]);
 
   const scoreVsRatingData = data.map(item => ({
     rating: item.rating,

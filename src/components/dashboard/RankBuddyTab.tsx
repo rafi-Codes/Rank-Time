@@ -1,7 +1,7 @@
 // src/components/dashboard/RankBuddyTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,13 +152,97 @@ export default function RankBuddyTab() {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [replayLoading, setReplayLoading] = useState(false);
 
+  const loadUserData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Load activity heatmap
+      const heatmapResponse = await fetch('/api/user/activity-heatmap');
+      if (heatmapResponse.ok) {
+        const heatmapResult = await heatmapResponse.json();
+        setHeatmapData(heatmapResult.heatmapData);
+        setHeatmapStats(heatmapResult.statistics);
+      }
+
+      // Load improvement path
+      const improvementResponse = await fetch('/api/user/improvement-path');
+      if (improvementResponse.ok) {
+        const improvementResult = await improvementResponse.json();
+        setImprovementData(improvementResult);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadChallenges = useCallback(async () => {
+    try {
+      // Load all challenges (daily and weekly)
+      const response = await fetch('/api/user/challenges?type=all');
+      if (response.ok) {
+        const data: { challenges: any[] } = await response.json();
+        console.log('Loaded challenges:', data.challenges.length, 'total');
+        const weeklyCount = data.challenges.filter((c: any) => c.type === 'weekly').length;
+        const dailyCount = data.challenges.filter((c: any) => c.type === 'daily').length;
+        console.log(`Daily: ${dailyCount}, Weekly: ${weeklyCount}`);
+        setChallenges(data.challenges);
+
+        // If no weekly challenges, try to generate them
+        if (weeklyCount === 0) {
+          console.log('No weekly challenges found, triggering generation...');
+          // Force refresh after a short delay to allow generation
+          setTimeout(() => loadChallenges(), 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading challenges:', error);
+    }
+  }, []);
+
+  const loadBadges = useCallback(async () => {
+    try {
+      const response = await fetch('/api/user/badges');
+      if (response.ok) {
+        const data = await response.json();
+        setBadges(data.badges);
+      }
+    } catch (error) {
+      console.error('Error loading badges:', error);
+    }
+  }, []);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      if (response.ok) {
+        const data = await response.json();
+        setSessions(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setSessions([]);
+    }
+  }, []);
+
+  const initializeChat = useCallback(() => {
+    const welcomeMessage = {
+      role: 'assistant' as const,
+      content: "👋 Hi there! I'm Rank Buddy, your AI coding companion. I won't give you direct answers, but I'll guide you with hints and questions to help you learn and improve. What would you like to work on today?",
+      timestamp: new Date(),
+      provider: 'system'
+    };
+    setMessages([welcomeMessage]);
+  }, []);
+
   useEffect(() => {
     loadUserData();
     loadChallenges();
     loadBadges();
     loadSessions();
     initializeChat();
-  }, []);
+  }, [loadUserData, loadChallenges, loadBadges, loadSessions, initializeChat]);
 
   const loadUserData = async () => {
     try {
@@ -813,7 +897,7 @@ export default function RankBuddyTab() {
                   </div>
                   {session.comments && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">
-                      "{session.comments}"
+                      &ldquo;{session.comments}&rdquo;
                     </p>
                   )}
                 </div>
@@ -959,7 +1043,7 @@ export default function RankBuddyTab() {
                             </h5>
                             {lap.comment && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
-                                "{lap.comment}"
+                                &ldquo;{lap.comment}&rdquo;
                               </p>
                             )}
                           </div>
