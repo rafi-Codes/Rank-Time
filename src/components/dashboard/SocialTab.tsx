@@ -206,14 +206,14 @@ export default function SocialTab() {
             Following ({following.length})
           </CardTitle>
           <CardDescription>
-            Users you're following and tracking their progress
+            Users you are following and tracking their progress
           </CardDescription>
         </CardHeader>
         <CardContent>
           {following.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>You haven't followed anyone yet.</p>
+              <p>You have not followed anyone yet.</p>
               <p className="text-sm">Search for users above to start following!</p>
             </div>
           ) : (

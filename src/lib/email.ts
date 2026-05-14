@@ -5,25 +5,33 @@ const mailjetSecretKey = process.env.MAILJET_SECRET_KEY;
 const fromEmail = process.env.FROM_EMAIL || 'noreply@ranktime.com';
 const fromName = process.env.FROM_NAME || 'RankTime';
 
-let mailjet: any = null;
+declare global {
+  // eslint-disable-next-line no-var
+  var _mailjetInstance: any | undefined;
+}
 
-if (mailjetApiKey && mailjetSecretKey) {
-  mailjet = new Mailjet({
-    apiKey: mailjetApiKey,
-    apiSecret: mailjetSecretKey,
-  });
-  console.log('Mailjet API configured for email sending');
-} else {
-  console.warn('Mailjet API not configured. Email sending will fail if attempted.');
+function getMailjet() {
+  if (global._mailjetInstance) return global._mailjetInstance;
+  if (mailjetApiKey && mailjetSecretKey) {
+    global._mailjetInstance = new Mailjet({
+      apiKey: mailjetApiKey,
+      apiSecret: mailjetSecretKey,
+    });
+    console.log('Mailjet API configured for email sending');
+  } else {
+    console.warn('Mailjet API not configured. Email sending will fail if attempted.');
+  }
+  return global._mailjetInstance;
 }
 
 export async function sendEmail(to: string, subject: string, text: string, html?: string) {
-  if (!mailjet) {
+  const mj = getMailjet();
+  if (!mj) {
     throw new Error('Mailjet API not configured');
   }
 
   try {
-    const request = mailjet.post('send', { version: 'v3.1' }).request({
+    const request = mj.post('send', { version: 'v3.1' }).request({
       Messages: [
         {
           From: {
