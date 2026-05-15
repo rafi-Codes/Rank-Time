@@ -63,6 +63,33 @@ export default function CodeforcesTab() {
   const [error, setError] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [connectedHandle, setConnectedHandle] = useState<string | null>(null);
+  
+  const fetchCodeforcesData = useCallback(async (userHandle?: string) => {
+    const targetHandle = userHandle || handle.trim() || connectedHandle;
+    if (!targetHandle) {
+      setError('No handle available');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/codeforces?handle=${encodeURIComponent(targetHandle)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch data');
+      }
+
+      setUserData(data.user);
+      setStats(data.stats);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch Codeforces data');
+    } finally {
+      setLoading(false);
+    }
+  }, [handle, connectedHandle]);
 
   useEffect(() => {
     const checkConnectionStatus = async () => {
@@ -138,33 +165,7 @@ export default function CodeforcesTab() {
     }
   };
 
-  const fetchCodeforcesData = useCallback(async (userHandle?: string) => {
-    const targetHandle = userHandle || handle.trim() || connectedHandle;
-    if (!targetHandle) {
-      setError('No handle available');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch(`/api/codeforces?handle=${encodeURIComponent(targetHandle)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch data');
-      }
-
-      setUserData(data.user);
-      setStats(data.stats);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch Codeforces data');
-    } finally {
-      setLoading(false);
-    }
-  }, [handle, connectedHandle]);
-
+ 
   const getRankColor = (rank?: string) => {
     if (!rank) return 'bg-gray-500';
     const rankLower = rank.toLowerCase();
