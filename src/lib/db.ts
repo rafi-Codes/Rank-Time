@@ -2,11 +2,6 @@
 import { MongoClient } from 'mongodb';
 import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
-}
-
-const uri = process.env.MONGODB_URI;
 const options = {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
@@ -26,23 +21,29 @@ declare global {
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (process.env.NODE_ENV === 'development') {
-  // In development mode, use a global variable so that the value
-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+function getMongoUri() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  return uri;
+}
+
+function getClientPromise() {
+  if (!clientPromise) {
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(getMongoUri(), options);
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
+  }
+
+  return clientPromise;
 }
 
 export async function connectToDatabase() {
   try {
-    const client = await clientPromise;
+    const client = await getClientPromise();
     return client;
   } catch (error) {
     console.error('Database connection error:', error);
@@ -58,7 +59,7 @@ export default async function connectDB() {
 
   global._mongooseConn = (async () => {
     try {
-      return await mongoose.connect(uri);
+      return await mongoose.connect(getMongoUri());
     } catch (error) {
       console.error('Mongoose connection error:', error);
       global._mongooseConn = undefined;

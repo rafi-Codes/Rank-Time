@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     // Get recent sessions
     const recentSessions = await Session.find({
-      userId: user._id,
+      user: user._id,
       createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 }).limit(10);
 
@@ -82,7 +82,47 @@ async function generateAIImprovementPath(
   badges: any[],
   sessions: any[]
 ) {
+  const fallbackResponse = {
+    recommendations: [
+      {
+        type: 'practice',
+        title: 'Keep your practice cadence steady',
+        description: 'Consistency matters more than occasional long sessions.',
+        priority: 'high' as const,
+        action: 'Aim for at least one focused session on most days this week.',
+      },
+      {
+        type: 'review',
+        title: 'Review recent sessions',
+        description: 'Use your recent attempts to spot patterns in speed and difficulty.',
+        priority: 'medium' as const,
+        action: 'After each session, write one note about what slowed you down.',
+      },
+    ],
+    nextSteps: [
+      {
+        title: 'This week',
+        description: 'A simple short-term plan based on your recent activity.',
+        items: [
+          { title: 'Complete 3 focused problem-solving sessions', type: 'goal' },
+          { title: 'Attempt one problem slightly above your comfort zone', type: 'challenge' },
+          { title: 'Review one past session replay for improvement ideas', type: 'practice' },
+        ],
+      },
+    ],
+    insights: {
+      totalActivities: activities.length,
+      categoriesWorked: Array.from(new Set(activities.map(a => a.metadata?.category).filter(Boolean))).length,
+      badgesEarned: badges.length,
+      consistency: calculateConsistency(activities),
+    },
+  };
+
   try {
+    if (!process.env.OPENROUTER_API_KEY) {
+      return fallbackResponse;
+    }
+
     // Initialize OpenRouter
     const openRouter = new OpenRouter({
       apiKey: process.env.OPENROUTER_API_KEY,
@@ -118,9 +158,10 @@ async function generateAIImprovementPath(
       })),
       sessions: sessions.slice(0, 5).map(s => ({
         date: s.createdAt,
-        duration: s.duration,
-        problemsSolved: s.problemsSolved?.length || 0,
-        rating: s.rating
+        duration: s.totalTime,
+        rating: s.problemRating,
+        score: s.score,
+        laps: s.laps?.length || 0,
       }))
     };
 
@@ -133,18 +174,11 @@ ${JSON.stringify(performanceData, null, 2)}
 
 Based on this data, provide a comprehensive improvement path with:
 
-1. **Current Strengths**: What they're doing well
-2. **Areas for Improvement**: Key weaknesses to address
-3. **Personalized Recommendations**: Specific, actionable advice
-4. **Next Steps**: Concrete goals for the next 1-2 weeks
-5. **Long-term Strategy**: 1-3 month improvement plan
-
-Format your response as a JSON object with these keys:
+Return only JSON using this exact shape:
 {
-  "strengths": ["string"],
-  "weaknesses": ["string"],
   "recommendations": [
     {
+      "type": "practice|review|challenge",
       "title": "string",
       "description": "string",
       "priority": "high|medium|low",
@@ -163,11 +197,11 @@ Format your response as a JSON object with these keys:
       ]
     }
   ],
-  "longTermStrategy": ["string"],
   "insights": {
-    "consistency": number (0-100),
-    "progressRate": "slow|moderate|fast",
-    "focusAreas": ["string"]
+    "totalActivities": number,
+    "categoriesWorked": number,
+    "badgesEarned": number,
+    "consistency": number
   }
 }
 
@@ -198,55 +232,22 @@ Be specific, encouraging, and realistic. Tailor advice to their current level an
       improvementPath = JSON.parse(aiResponse);
     } catch (parseError) {
       console.error('Failed to parse AI response:', aiResponse);
-      // Fallback to basic recommendations
-      improvementPath = {
-        strengths: ['Active participation'],
-        weaknesses: ['Need more analysis'],
-        recommendations: [{
-          title: 'Continue practicing',
-          description: 'Keep up the good work',
-          priority: 'medium',
-          action: 'Practice regularly'
-        }],
-        nextSteps: [{
-          title: 'Daily practice',
-          description: 'Code every day',
-          items: [{ title: 'Solve one problem daily', type: 'goal' }]
-        }],
-        longTermStrategy: ['Build consistency'],
-        insights: {
-          consistency: calculateConsistency(activities),
-          progressRate: 'moderate',
-          focusAreas: ['consistency']
-        }
-      };
+      improvementPath = fallbackResponse;
     }
 
-    return improvementPath;
+    return {
+      recommendations: Array.isArray(improvementPath.recommendations) ? improvementPath.recommendations : fallbackResponse.recommendations,
+      nextSteps: Array.isArray(improvementPath.nextSteps) ? improvementPath.nextSteps : fallbackResponse.nextSteps,
+      insights: {
+        totalActivities: Number(improvementPath.insights?.totalActivities ?? fallbackResponse.insights.totalActivities),
+        categoriesWorked: Number(improvementPath.insights?.categoriesWorked ?? fallbackResponse.insights.categoriesWorked),
+        badgesEarned: Number(improvementPath.insights?.badgesEarned ?? fallbackResponse.insights.badgesEarned),
+        consistency: Number(improvementPath.insights?.consistency ?? fallbackResponse.insights.consistency),
+      },
+    };
   } catch (error) {
     console.error('AI improvement path generation error:', error);
-    // Return fallback response
-    return {
-      strengths: ['Showing interest in improvement'],
-      weaknesses: ['AI analysis temporarily unavailable'],
-      recommendations: [{
-        title: 'Continue regular practice',
-        description: 'Keep solving problems consistently',
-        priority: 'medium',
-        action: 'Practice daily'
-      }],
-      nextSteps: [{
-        title: 'Maintain momentum',
-        description: 'Keep your current practice routine',
-        items: [{ title: 'Solve problems regularly', type: 'goal' }]
-      }],
-      longTermStrategy: ['Focus on consistent improvement'],
-      insights: {
-        consistency: calculateConsistency(activities),
-        progressRate: 'moderate',
-        focusAreas: ['consistency']
-      }
-    };
+    return fallbackResponse;
   }
 }
 

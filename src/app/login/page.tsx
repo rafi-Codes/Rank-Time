@@ -44,10 +44,8 @@ export default function LoginPage() {
       setError(result.error);
       setIsLoading(false);
     } else if (result?.ok) {
-      console.log('Sign in successful, refetching session...');
       // Refetch session to ensure it's updated
       await getSession();
-      console.log('Session refetched, redirecting to dashboard');
       router.push('/dashboard');
     } else {
       console.error('Sign in result:', result);
@@ -157,6 +155,7 @@ export default function LoginPage() {
                       className="flex-1 p-2 border rounded"
                     />
                     <button
+                      type="button"
                       onClick={async () => {
                         setFpStatus('');
                         try {
@@ -203,6 +202,7 @@ export default function LoginPage() {
                   />
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={async () => {
                         setFpStatus('');
                         if (newPassword !== confirmPassword) { setFpStatus('Passwords do not match'); return; }
@@ -231,6 +231,7 @@ export default function LoginPage() {
                       className="px-3 py-2 bg-green-600 text-white rounded"
                     >Reset</button>
                     <button
+                      type="button"
                       onClick={() => { setShowForgot(false); setOtpSent(false); setFpStatus(''); }}
                       className="px-3 py-2 bg-gray-300 dark:bg-gray-700 rounded"
                     >Cancel</button>

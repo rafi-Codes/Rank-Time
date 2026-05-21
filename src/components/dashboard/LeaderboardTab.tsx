@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Medal, Award, Crown, User } from 'lucide-react';
+import { getLeagueLabel } from '@/lib/league';
 
 interface LeaderboardUser {
   _id: string;
@@ -137,18 +138,20 @@ export default function LeaderboardTab() {
 
   const getLeagueColor = (league: string) => {
     switch (league.toLowerCase()) {
-      case 'legend':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'master':
+      case 'grandmaster':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'expert':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'advanced':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'intermediate':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'beginner':
+      case 'master':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'diamond':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'platinum':
+        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+      case 'gold':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'silver':
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
+      case 'bronze':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -233,7 +236,7 @@ export default function LeaderboardTab() {
 
                 <div className="flex items-center space-x-4">
                   <Badge className={getLeagueColor(user.league)}>
-                    {user.league}
+                    {getLeagueLabel(user.league)}
                   </Badge>
 
                   <div className="text-right">
@@ -285,7 +288,7 @@ export default function LeaderboardTab() {
 
               <div className="flex items-center space-x-4">
                 <Badge className={getLeagueColor(currentUser.league)}>
-                  {currentUser.league}
+                  {getLeagueLabel(currentUser.league)}
                 </Badge>
 
                 <div className="text-right">

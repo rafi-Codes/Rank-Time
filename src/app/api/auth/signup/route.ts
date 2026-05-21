@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db';
 import { generateOtp, sendEmail } from '@/lib/email';
-import { generateUserTag } from '@/lib/utils';
+import { generateUserTag, normalizeEmail } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +11,8 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, resend } = body;
+    const { name, password, resend } = body;
+    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
 
     // Handle resend OTP case
     if (resend && email) {
@@ -46,13 +47,19 @@ export async function POST(request: Request) {
       });
 
       // Send OTP email
+      const subject = 'Your RankTime verification code (resent)';
+      const text = `Your new verification code is: ${otp}. It expires in 10 minutes.`;
+      const html = `<p>Your new verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
+
       try {
-        const subject = 'Your RankTime verification code (resent)';
-        const text = `Your new verification code is: ${otp}. It expires in 10 minutes.`;
-        const html = `<p>Your new verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
         await sendEmail(email, subject, text, html);
       } catch (err) {
         console.error('Failed to send OTP email:', err);
+        await db.collection('emailOtps').deleteMany({ email });
+        return NextResponse.json(
+          { message: 'Unable to send verification code right now. Please try again later.' },
+          { status: 503 }
+        );
       }
 
       return NextResponse.json(
@@ -72,7 +79,7 @@ export async function POST(request: Request) {
     const client = await connectToDatabase();
     const db = client.db();
 
-    const existingUser = await db.collection('users').findOne({ email: email });
+    const existingUser = await db.collection('users').findOne({ email });
 
     if (existingUser) {
       return NextResponse.json(
@@ -101,6 +108,8 @@ export async function POST(request: Request) {
     const otp = generateOtp(4);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
 
+    await db.collection('emailOtps').deleteMany({ email });
+
     await db.collection('emailOtps').insertOne({
       email,
       otp,
@@ -115,13 +124,19 @@ export async function POST(request: Request) {
     });
 
     // send OTP email (may throw if SMTP not configured)
+    const subject = 'Your RankTime verification code';
+    const text = `Your verification code is: ${otp}. It expires in 10 minutes.`;
+    const html = `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
+
     try {
-      const subject = 'Your RankTime verification code';
-      const text = `Your verification code is: ${otp}. It expires in 10 minutes.`;
-      const html = `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
       await sendEmail(email, subject, text, html);
     } catch (err) {
       console.error('Failed to send OTP email:', err);
+      await db.collection('emailOtps').deleteMany({ email });
+      return NextResponse.json(
+        { message: 'Unable to send verification code right now. Please try again later.' },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json(

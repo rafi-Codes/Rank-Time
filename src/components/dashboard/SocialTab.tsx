@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, UserMinus, Users, Trophy } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { getLeagueLabel } from '@/lib/league';
 
 interface User {
   _id: string;
@@ -20,10 +20,9 @@ interface User {
 }
 
 export default function SocialTab() {
-  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [following, setFollowing] = useState<string[]>([]);
+  const [following, setFollowing] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +36,7 @@ export default function SocialTab() {
       const response = await fetch('/api/users/following');
       if (response.ok) {
         const data = await response.json();
-        setFollowing(data.following.map((user: User) => user._id));
+        setFollowing(data.following);
       }
     } catch (error) {
       console.error('Failed to load following list:', error);
@@ -76,7 +75,7 @@ export default function SocialTab() {
       });
 
       if (response.ok) {
-        setFollowing(prev => [...prev, targetUserId]);
+        await loadFollowing();
       }
     } catch (error) {
       console.error('Follow failed:', error);
@@ -93,7 +92,7 @@ export default function SocialTab() {
       });
 
       if (response.ok) {
-        setFollowing(prev => prev.filter(id => id !== targetUserId));
+        setFollowing(prev => prev.filter((user) => user._id !== targetUserId));
       }
     } catch (error) {
       console.error('Unfollow failed:', error);
@@ -166,12 +165,12 @@ export default function SocialTab() {
                       <div className="font-medium">{user.name}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">@{user.usertag}</div>
                     </div>
-                    <Badge className={`${getLeagueColor(user.league)} text-white`}>
+                  <Badge className={`${getLeagueColor(user.league)} text-white`}>
                       <Trophy className="h-3 w-3 mr-1" />
-                      {user.league}
+                      {getLeagueLabel(user.league)}
                     </Badge>
                   </div>
-                  {following.includes(user._id) ? (
+                  {following.some((followedUser) => followedUser._id === user._id) ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -217,10 +216,34 @@ export default function SocialTab() {
               <p className="text-sm">Search for users above to start following!</p>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Following list will be displayed here.</p>
-              <p className="text-sm">This feature is under development.</p>
+            <div className="space-y-3">
+              {following.map((user) => (
+                <div key={user._id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={user.image} />
+                      <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">@{user.usertag}</div>
+                    </div>
+                    <Badge className={`${getLeagueColor(user.league)} text-white`}>
+                      <Trophy className="h-3 w-3 mr-1" />
+                      {getLeagueLabel(user.league)}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnfollow(user._id)}
+                    disabled={isLoading}
+                  >
+                    <UserMinus className="h-4 w-4 mr-1" />
+                    Unfollow
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

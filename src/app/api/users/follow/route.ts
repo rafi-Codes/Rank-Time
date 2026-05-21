@@ -45,7 +45,18 @@ export async function POST(request: NextRequest) {
 
     // Check if already following
     const currentUser = await User.findById(session.user.id);
-    if (currentUser.following.includes(targetUserId)) {
+    if (!currentUser) {
+      return NextResponse.json(
+        { message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const isAlreadyFollowing = currentUser.following.some(
+      (followedUserId: mongoose.Types.ObjectId) => followedUserId.toString() === targetUserId
+    );
+
+    if (isAlreadyFollowing) {
       return NextResponse.json(
         { message: 'Already following this user' },
         { status: 400 }
