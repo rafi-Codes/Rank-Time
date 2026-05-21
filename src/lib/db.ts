@@ -7,6 +7,10 @@ const options = {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   maxIdleTimeMS: 30000,
+  tls: true,
+  tlsInsecure: process.env.NODE_ENV === 'development', // Only for dev
+  retryWrites: true,
+  w: 'majority',
 };
 
 declare global {
