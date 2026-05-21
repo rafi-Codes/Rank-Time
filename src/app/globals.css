@@ -4,49 +4,147 @@
 
 @layer base {
   :root {
+    /* ========== PRIMARY COLORS ========== */
     --color-cyan-primary: #00d9ff;
     --color-cyan-light: #4ffbff;
     --color-cyan-dark: #0099cc;
 
+    /* Color Palette - Cyan Brand (50-950) */
+    --color-cyan-50: #f0f9ff;
+    --color-cyan-100: #e0f2fe;
+    --color-cyan-200: #bae6fd;
+    --color-cyan-300: #7dd3fc;
+    --color-cyan-400: #22d3ee;
+    --color-cyan-500: #06b6d4;
+    --color-cyan-600: #0891b2;
+    --color-cyan-700: #0e7490;
+    --color-cyan-800: #155e75;
+    --color-cyan-900: #164e63;
+    --color-cyan-950: #082f49;
+
+    /* ========== SEMANTIC COLORS ========== */
+    --color-success: #10b981;
+    --color-success-light: #d1fae5;
+    --color-success-dark: #065f46;
+
+    --color-warning: #f59e0b;
+    --color-warning-light: #fef3c7;
+    --color-warning-dark: #92400e;
+
+    --color-danger: #ef4444;
+    --color-danger-light: #fee2e2;
+    --color-danger-dark: #7f1d1d;
+
+    --color-info: #00d9ff;
+    --color-info-light: #cffafe;
+    --color-info-dark: #164e63;
+
+    /* ========== NEUTRAL COLORS ========== */
     --color-bg-primary: #ffffff;
     --color-bg-secondary: #f5f7fa;
     --color-bg-tertiary: #eaecf0;
     --color-border: #d0d5dd;
     --color-text-primary: #0f1419;
     --color-text-secondary: #5f6d7b;
+    --color-text-tertiary: #8892a0;
 
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-danger: #ef4444;
-    --color-info: #00d9ff;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+    --color-gray-950: #030712;
 
+    /* ========== GLASS EFFECT ========== */
     --glass-bg: rgba(255, 255, 255, 0.84);
     --glass-bg-strong: rgba(255, 255, 255, 0.94);
     --glass-border: rgba(200, 210, 220, 0.62);
     --glass-shadow: 0 18px 54px rgba(15, 20, 25, 0.1);
     --glass-cyan-shadow: 0 18px 54px rgba(0, 217, 255, 0.14);
 
+    /* ========== TYPOGRAPHY ========== */
     --font-family-primary: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-secondary: "Poppins", "Montserrat", sans-serif;
     --font-family-mono: "JetBrains Mono", "Monaco", monospace;
 
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    --spacing-2xl: 3rem;
-    --spacing-3xl: 4rem;
+    /* Font Sizes */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+    --text-5xl: 3rem;
+    --text-6xl: 3.75rem;
+    --text-7xl: 4.5rem;
 
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 1rem;
-    --radius-xl: 1.5rem;
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+    --line-height-loose: 2;
+
+    /* Font Weights */
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* ========== SPACING ========== */
+    --spacing-xs: 0.25rem;    /* 4px */
+    --spacing-sm: 0.5rem;     /* 8px */
+    --spacing-md: 1rem;       /* 16px */
+    --spacing-lg: 1.5rem;     /* 24px */
+    --spacing-xl: 2rem;       /* 32px */
+    --spacing-2xl: 3rem;      /* 48px */
+    --spacing-3xl: 4rem;      /* 64px */
+    --spacing-4xl: 6rem;      /* 96px */
+    --spacing-5xl: 8rem;      /* 128px */
+
+    /* ========== BORDER RADIUS ========== */
+    --radius-none: 0px;
+    --radius-sm: 0.375rem;    /* 6px */
+    --radius-md: 0.5rem;      /* 8px */
+    --radius-lg: 1rem;        /* 16px */
+    --radius-xl: 1.5rem;      /* 24px */
+    --radius-2xl: 2rem;       /* 32px */
     --radius-full: 9999px;
 
+    /* ========== SHADOWS ========== */
+    --shadow-none: none;
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    
+    /* Elevation shadows */
+    --elevation-1: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --elevation-2: 0 4px 8px rgba(0, 0, 0, 0.12);
+    --elevation-3: 0 8px 16px rgba(0, 0, 0, 0.16);
+    --elevation-4: 0 12px 24px rgba(0, 0, 0, 0.20);
+
+    /* ========== TRANSITIONS & ANIMATIONS ========== */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slower: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Easing functions */
+    --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ========== Z-INDEX ========== */
     --z-dropdown: 1000;
     --z-sticky: 1100;
     --z-fixed: 1200;
@@ -54,6 +152,28 @@
     --z-modal: 1400;
     --z-tooltip: 1500;
 
+    /* ========== COMPONENT SIZING ========== */
+    --button-height-sm: 2rem;     /* 32px */
+    --button-height-md: 2.5rem;   /* 40px */
+    --button-height-lg: 3rem;     /* 48px */
+    --button-height-xl: 3.5rem;   /* 56px */
+
+    --input-height: 2.5rem;       /* 40px */
+    --input-height-lg: 3rem;      /* 48px */
+
+    --navbar-height: 4rem;        /* 64px */
+    --sidebar-width: 16rem;       /* 256px */
+    --sidebar-width-collapsed: 4.5rem; /* 72px */
+
+    /* ========== BREAKPOINTS ========== */
+    --breakpoint-xs: 320px;
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+
+    /* ========== SEMANTIC HSL (for Tailwind) ========== */
     --background: 0 0% 100%;
     --foreground: 217 26% 8%;
     --card: 0 0% 100%;
@@ -78,19 +198,65 @@
 
   .dark,
   [data-theme="dark"] {
+    /* ========== DARK MODE - SEMANTIC COLORS ========== */
     --color-bg-primary: #0f1419;
     --color-bg-secondary: #1a1f2e;
     --color-bg-tertiary: #252d3d;
     --color-border: #3a4456;
     --color-text-primary: #e8eaed;
     --color-text-secondary: #9aa0aa;
+    --color-text-tertiary: #6b7280;
 
+    --color-success: #10b981;
+    --color-success-light: #064e3b;
+    --color-success-dark: #86efac;
+
+    --color-warning: #fbbf24;
+    --color-warning-light: #78350f;
+    --color-warning-dark: #fef08a;
+
+    --color-danger: #f87171;
+    --color-danger-light: #5f1f1a;
+    --color-danger-dark: #fca5a5;
+
+    --color-info: #00d9ff;
+    --color-info-light: #082f49;
+    --color-info-dark: #cffafe;
+
+    /* ========== DARK MODE - NEUTRAL ========== */
+    --color-gray-50: #030712;
+    --color-gray-100: #111827;
+    --color-gray-200: #1f2937;
+    --color-gray-300: #374151;
+    --color-gray-400: #4b5563;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #9ca3af;
+    --color-gray-700: #d1d5db;
+    --color-gray-800: #e5e7eb;
+    --color-gray-900: #f3f4f6;
+    --color-gray-950: #f9fafb;
+
+    /* ========== DARK MODE - GLASS EFFECT ========== */
     --glass-bg: rgba(26, 31, 46, 0.76);
     --glass-bg-strong: rgba(26, 31, 46, 0.9);
     --glass-border: rgba(58, 68, 86, 0.68);
     --glass-shadow: 0 18px 54px rgba(0, 0, 0, 0.38);
     --glass-cyan-shadow: 0 18px 54px rgba(0, 217, 255, 0.16);
 
+    /* ========== DARK MODE - SHADOWS ========== */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+    --elevation-1: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --elevation-2: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --elevation-3: 0 8px 16px rgba(0, 0, 0, 0.5);
+    --elevation-4: 0 12px 24px rgba(0, 0, 0, 0.6);
+
+    /* ========== DARK MODE - HSL ========== */
     --background: 217 26% 8%;
     --foreground: 220 13% 92%;
     --card: 217 25% 13%;

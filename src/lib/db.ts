@@ -1,12 +1,15 @@
 // src/lib/db.ts
-import { MongoClient } from 'mongodb';
+import { MongoClient, type MongoClientOptions } from 'mongodb';
 import mongoose from 'mongoose';
 
-const options = {
+const options: MongoClientOptions = {
   maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
   maxIdleTimeMS: 30000,
+  retryWrites: true,
+  authSource: 'admin',
+  ...(process.env.NODE_ENV === 'production' && { tls: true }),
 };
 
 declare global {
@@ -43,7 +46,10 @@ function getClientPromise() {
 
 export async function connectToDatabase() {
   try {
+    console.log('Attempting MongoDB connection...');
+    console.log('MONGODB_URI format:', process.env.MONGODB_URI?.split('@')[0] + '@...');
     const client = await getClientPromise();
+    console.log('MongoDB connected successfully');
     return client;
   } catch (error) {
     console.error('Database connection error:', error);
