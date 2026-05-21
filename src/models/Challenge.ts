@@ -37,6 +37,8 @@ const ChallengeSchema = new Schema<IChallenge>(
 
 // Index for efficient queries
 ChallengeSchema.index({ userId: 1, type: 1, completed: 1 });
+ChallengeSchema.index({ userId: 1, deadline: 1 });
+ChallengeSchema.index({ userId: 1, type: 1, deadline: 1 }, { unique: true });
 ChallengeSchema.index({ deadline: 1 });
 
 export default mongoose.models?.Challenge || mongoose.model<IChallenge>('Challenge', ChallengeSchema);

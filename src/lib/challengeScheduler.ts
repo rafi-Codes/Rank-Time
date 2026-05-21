@@ -1,4 +1,4 @@
-import { connectToDatabase } from './db';
+import connectDB from './db';
 import User from '@/models/User';
 import { generateChallengesForUser } from './challenges';
 
@@ -13,7 +13,7 @@ function msUntilNext(hour: number, minute = 0) {
 
 async function runDailyGeneration() {
   try {
-    await connectToDatabase();
+    await connectDB();
     const users = await User.find({}).select('_id');
     for (const u of users) {
       try {
@@ -30,7 +30,7 @@ async function runDailyGeneration() {
 
 async function runWeeklyGeneration() {
   try {
-    await connectToDatabase();
+    await connectDB();
     const users = await User.find({}).select('_id');
     for (const u of users) {
       try {

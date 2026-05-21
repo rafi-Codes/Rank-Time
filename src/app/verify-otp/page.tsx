@@ -62,7 +62,7 @@ export default function VerifyOTPPage() {
           router.push('/login?message=Email verified successfully! Please sign in.');
         }, 3000);
       } else {
-        setError(data.message || 'Verification failed');
+        setError(data?.error?.message || data.message || 'Verification failed');
       }
     } catch (error) {
       setError('Something went wrong. Please try again.');
@@ -113,7 +113,7 @@ export default function VerifyOTPPage() {
       if (response.ok) {
         setResendMessage('OTP sent successfully! Check your email.');
       } else {
-        setResendMessage(data.message || 'Failed to resend OTP');
+        setResendMessage(data?.error?.message || data.message || 'Failed to resend OTP');
       }
     } catch (error) {
       setResendMessage('Something went wrong. Please try again.');

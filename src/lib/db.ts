@@ -1,28 +1,21 @@
-// src/lib/db.ts
-import { MongoClient, type MongoClientOptions } from 'mongodb';
 import mongoose from 'mongoose';
 
-const options: MongoClientOptions = {
-  maxPoolSize: 10,
+const mongooseOptions = {
+  minPoolSize: 5,
+  maxPoolSize: 20,
   serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
   maxIdleTimeMS: 30000,
   retryWrites: true,
-  authSource: 'admin',
   ...(process.env.NODE_ENV === 'production' && { tls: true }),
 };
 
 declare global {
   // eslint-disable-next-line no-var
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
-  // eslint-disable-next-line no-var
   var _mongooseConn: Promise<typeof mongoose> | undefined;
   // eslint-disable-next-line no-var
   var _challengeSchedulerInitialized: boolean | undefined;
 }
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
 
 function getMongoUri() {
   const uri = process.env.MONGODB_URI;
@@ -32,40 +25,19 @@ function getMongoUri() {
   return uri;
 }
 
-function getClientPromise() {
-  if (!clientPromise) {
-    if (!global._mongoClientPromise) {
-      client = new MongoClient(getMongoUri(), options);
-      global._mongoClientPromise = client.connect();
-    }
-    clientPromise = global._mongoClientPromise;
-  }
-
-  return clientPromise;
-}
-
-export async function connectToDatabase() {
-  try {
-    console.log('Attempting MongoDB connection...');
-    console.log('MONGODB_URI format:', process.env.MONGODB_URI?.split('@')[0] + '@...');
-    const client = await getClientPromise();
-    console.log('MongoDB connected successfully');
-    return client;
-  } catch (error) {
-    console.error('Database connection error:', error);
-    throw new Error(`Failed to connect to database: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
 // Mongoose connection for models — cached on global to avoid multiple connections in serverless
 export default async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
+  }
+
   if (global._mongooseConn) {
     return global._mongooseConn;
   }
 
   global._mongooseConn = (async () => {
     try {
-      return await mongoose.connect(getMongoUri());
+      return await mongoose.connect(getMongoUri(), mongooseOptions);
     } catch (error) {
       console.error('Mongoose connection error:', error);
       global._mongooseConn = undefined;
@@ -74,6 +46,21 @@ export default async function connectDB() {
   })();
 
   return global._mongooseConn;
+}
+
+export async function pingDatabase() {
+  await connectDB();
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('Mongoose database handle unavailable');
+  }
+
+  await db.admin().ping();
+  return {
+    readyState: mongoose.connection.readyState,
+    host: mongoose.connection.host,
+    name: mongoose.connection.name,
+  };
 }
 
 // Initialize challenge scheduler when DB module is loaded

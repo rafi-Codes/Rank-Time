@@ -51,5 +51,11 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+UserSchema.index({ league: 1, totalScore: -1 });
+UserSchema.index({ totalScore: -1 });
+UserSchema.index({ currentStreak: -1 });
+UserSchema.index({ maxStreak: -1 });
+UserSchema.index({ createdAt: -1 });
+
 // Create a model or use the existing one if it's already been created
 export default mongoose.models?.User || mongoose.model<IUser>('User', UserSchema);

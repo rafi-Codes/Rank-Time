@@ -55,6 +55,8 @@ const SessionSchema = new Schema<ISession>(
 
 // Create index for faster queries
 SessionSchema.index({ user: 1, createdAt: -1 });
+SessionSchema.index({ problemRating: 1 });
+SessionSchema.index({ createdAt: -1 });
 
 // Create a model or use the existing one if it's already been created
 export default mongoose.models?.Session || mongoose.model<ISession>('Session', SessionSchema);

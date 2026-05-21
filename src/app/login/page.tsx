@@ -117,7 +117,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      setFpStatus(data?.message || 'If an account exists, an OTP was sent.');
+      setFpStatus(data?.message || data?.data?.message || 'If an account exists, an OTP was sent.');
       setOtpSent(true);
     } catch (err) {
       console.error(err);
@@ -160,7 +160,7 @@ export default function LoginPage() {
           setConfirmPassword('');
         }, 2000);
       } else {
-        setFpStatus(data?.message || 'Failed to reset password');
+        setFpStatus(data?.error?.message || data?.message || 'Failed to reset password');
       }
     } catch (err) {
       console.error(err);
