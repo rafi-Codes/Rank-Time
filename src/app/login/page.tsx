@@ -1,10 +1,11 @@
 // src/app/login/page.tsx
 'use client';
 
-import { signIn, getSession } from 'next-auth/react';
+import { signIn, getSession, getProviders } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Github, Chrome } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +19,8 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fpStatus, setFpStatus] = useState('');
+  const [socialLoading, setSocialLoading] = useState<'google' | 'github' | null>(null);
+  const [socialProviders, setSocialProviders] = useState({ google: false, github: false });
   const router = useRouter();
 
   useEffect(() => {
@@ -25,6 +28,15 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const message = params.get('message');
     if (message) setSuccess(message);
+  }, []);
+
+  useEffect(() => {
+    getProviders().then((providers) => {
+      setSocialProviders({
+        google: Boolean(providers?.google),
+        github: Boolean(providers?.github),
+      });
+    });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,6 +66,22 @@ export default function LoginPage() {
     }
   }
 
+  async function handleOAuthSignIn(provider: 'google' | 'github') {
+    setError('');
+    setSuccess('');
+    setSocialLoading(provider);
+
+    const result = await signIn(provider, {
+      callbackUrl: '/dashboard',
+      redirect: true,
+    });
+
+    if (result?.error) {
+      setError(result.error);
+      setSocialLoading(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -74,6 +102,37 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
         </div>
+        {(socialProviders.google || socialProviders.github) && (
+          <div className="space-y-3">
+            {socialProviders.google && (
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={!!socialLoading || isLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+              >
+                <Chrome className="h-4 w-4" />
+                {socialLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
+              </button>
+            )}
+            {socialProviders.github && (
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('github')}
+                disabled={!!socialLoading || isLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-900 bg-gray-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50 dark:border-gray-600"
+              >
+                <Github className="h-4 w-4" />
+                {socialLoading === 'github' ? 'Connecting...' : 'Continue with GitHub'}
+              </button>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+              <span className="text-xs uppercase text-gray-500 dark:text-gray-400">or</span>
+              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+            </div>
+          </div>
+        )}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
