@@ -83,22 +83,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="page-shell min-h-screen">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 z-10">
         <div className="flex justify-center">
           <Link href="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">RankTime</span>
+            <span className="brand-gradient text-xl font-bold">RankTime</span>
           </Link>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+        <div className="glass-panel w-full max-w-md space-y-8 rounded-xl p-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Sign in to your account
           </h2>
         </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={!!socialLoading || isLoading}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+                className="glass-panel flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary/60 hover:text-primary disabled:opacity-50"
               >
                 <Chrome className="h-4 w-4" />
                 {socialLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
@@ -120,31 +120,31 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleOAuthSignIn('github')}
                 disabled={!!socialLoading || isLoading}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-900 bg-gray-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50 dark:border-gray-600"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#0F1419] bg-[#0F1419] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50 dark:border-border"
               >
                 <Github className="h-4 w-4" />
                 {socialLoading === 'github' ? 'Connecting...' : 'Continue with GitHub'}
               </button>
             )}
             <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-              <span className="text-xs uppercase text-gray-500 dark:text-gray-400">or</span>
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
           </div>
         )}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-              <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+              <div className="text-sm text-destructive">{error}</div>
             </div>
           )}
           {success && (
-            <div className="rounded-md bg-green-50 dark:bg-green-900/30 p-4">
-              <div className="text-sm text-green-700 dark:text-green-300">{success}</div>
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+              <div className="text-sm text-emerald-600 dark:text-emerald-300">{success}</div>
             </div>
           )}
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-3">
             <div>
               <label htmlFor="email-address" className="sr-only">
                 Email address
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="relative block w-full rounded-lg border border-input bg-background/80 px-4 py-3 text-foreground placeholder:text-muted-foreground transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-background/40 sm:text-sm"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -171,7 +171,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="relative block w-full rounded-lg border border-input bg-background/80 px-4 py-3 text-foreground placeholder:text-muted-foreground transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-background/40 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -183,7 +183,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="group relative flex w-full justify-center rounded-lg border border-transparent bg-[linear-gradient(135deg,var(--color-cyan-primary),var(--color-cyan-light))] px-4 py-2 text-sm font-semibold text-[#0F1419] shadow-[0_8px_22px_rgba(0,217,255,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(0,217,255,0.42)] focus:outline-none disabled:opacity-50"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -194,24 +194,24 @@ export default function LoginPage() {
         <div className="mt-4 text-center">
           {!showForgot ? (
             <button
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-sm font-medium text-primary hover:underline"
               onClick={() => { setShowForgot(true); setFpStatus(''); }}
             >
               Forgot password?
             </button>
           ) : (
-            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded">
+            <div className="glass-panel rounded-lg p-4">
               <h4 className="text-sm font-medium mb-2">Reset password via email OTP</h4>
               {!otpSent ? (
                 <>
-                  <p className="text-sm text-gray-600 mb-2">Enter your account email and we will send a one-time code.</p>
+                  <p className="text-sm text-muted-foreground mb-2">Enter your account email and we will send a one-time code.</p>
                   <div className="flex gap-2">
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       type="email"
                       placeholder="you@example.com"
-                      className="flex-1 p-2 border rounded"
+                      className="min-w-0 flex-1 rounded-lg border border-input bg-background/80 p-2"
                     />
                     <button
                       type="button"
@@ -231,33 +231,33 @@ export default function LoginPage() {
                           setFpStatus('Failed to send OTP');
                         }
                       }}
-                      className="px-3 py-2 bg-blue-600 text-white rounded"
+                      className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
                     >Send OTP</button>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-2">Enter the code we emailed and choose a new password.</p>
+                  <p className="text-sm text-muted-foreground mb-2">Enter the code we emailed and choose a new password.</p>
                   <input
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     type="text"
                     placeholder="One-time code"
-                    className="w-full p-2 border rounded mb-2"
+                    className="mb-2 w-full rounded-lg border border-input bg-background/80 p-2"
                   />
                   <input
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     type="password"
                     placeholder="New password"
-                    className="w-full p-2 border rounded mb-2"
+                    className="mb-2 w-full rounded-lg border border-input bg-background/80 p-2"
                   />
                   <input
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     type="password"
                     placeholder="Confirm password"
-                    className="w-full p-2 border rounded mb-2"
+                    className="mb-2 w-full rounded-lg border border-input bg-background/80 p-2"
                   />
                   <div className="flex gap-2">
                     <button
@@ -287,12 +287,12 @@ export default function LoginPage() {
                           setFpStatus('Failed to reset password');
                         }
                       }}
-                      className="px-3 py-2 bg-green-600 text-white rounded"
+                      className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-white"
                     >Reset</button>
                     <button
                       type="button"
                       onClick={() => { setShowForgot(false); setOtpSent(false); setFpStatus(''); }}
-                      className="px-3 py-2 bg-gray-300 dark:bg-gray-700 rounded"
+                      className="rounded-lg border border-border px-3 py-2 text-sm font-semibold"
                     >Cancel</button>
                   </div>
                 </>
@@ -303,11 +303,11 @@ export default function LoginPage() {
         </div>
 
         <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
             Do not have an account?{' '}
             <Link
               href="/register"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
+              className="font-semibold text-primary hover:underline"
             >
               Sign up
             </Link>
@@ -317,8 +317,8 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+      <footer className="mt-8 border-t border-border/70 py-6">
+        <div className="text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
           <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
         </div>
