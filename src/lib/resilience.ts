@@ -89,6 +89,6 @@ export function recordCircuitFailure(
   const failures = [...state.failures.filter((time) => now - time <= windowMs), now];
   circuits.set(name, {
     failures,
-    openUntil: failures.length > maxFailures ? now + openMs : state.openUntil,
+    openUntil: failures.length >= maxFailures ? now + openMs : state.openUntil,
   });
 }

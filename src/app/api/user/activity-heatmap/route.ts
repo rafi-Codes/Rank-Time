@@ -124,7 +124,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     const totalActivities = activities.reduce((sum, activity) => sum + activity.totalSessions, 0);
     const totalPoints = activities.reduce((sum, activity) => sum + (activity.totalSessions * 10), 0);
     const totalTime = activities.reduce((sum, activity) => sum + activity.totalTime, 0);
-    const averageDaily = totalActivities / heatmapData.length;
+    const averageDaily = heatmapData.length > 0 ? totalActivities / heatmapData.length : 0;
 
     // Find most active day
     const mostActiveDay = activities.reduce((max, activity) =>
