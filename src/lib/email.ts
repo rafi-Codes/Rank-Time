@@ -1,4 +1,6 @@
 import Mailjet from 'node-mailjet';
+import { sendEmailWithRetry } from '@/lib/emailQueue';
+import { logger } from '@/lib/logger';
 
 const mailjetApiKey = process.env.MAILJET_API_KEY;
 const mailjetSecretKey = process.env.MAILJET_SECRET_KEY;
@@ -17,14 +19,18 @@ function getMailjet() {
       apiKey: mailjetApiKey,
       apiSecret: mailjetSecretKey,
     });
-    console.log('Mailjet API configured for email sending');
+    logger.info('Mailjet API configured for email sending');
   } else {
-    console.warn('Mailjet API not configured. Email sending will fail if attempted.');
+    logger.warn('Mailjet API not configured. Email sending will fail if attempted.');
   }
   return global._mailjetInstance;
 }
 
 export async function sendEmail(to: string, subject: string, text: string, html?: string) {
+  return sendEmailWithRetry({ to, subject, text, html }, sendEmailOnce);
+}
+
+async function sendEmailOnce(to: string, subject: string, text: string, html?: string) {
   const mj = getMailjet();
   if (!mj) {
     throw new Error('Mailjet API not configured');
@@ -53,7 +59,7 @@ export async function sendEmail(to: string, subject: string, text: string, html?
     const result = await request;
     return result.body;
   } catch (error) {
-    console.error('Mailjet API error:', error);
+    logger.warn('Mailjet API error', { to, subject, error });
     throw new Error('Failed to send email via Mailjet');
   }
 }

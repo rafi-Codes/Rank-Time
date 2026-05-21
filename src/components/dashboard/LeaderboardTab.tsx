@@ -70,11 +70,12 @@ export default function LeaderboardTab() {
       const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
       if (response.ok) {
         const data = await response.json();
-        setLeaderboard(data);
+        const users = data.success ? data.data : data;
+        setLeaderboard(users);
 
         // Find current user in leaderboard
         if (session?.user?.email) {
-          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
+          const userInLeaderboard = users.find((user: LeaderboardUser) => user.email === session.user.email);
           if (userInLeaderboard) {
             setCurrentUser(userInLeaderboard);
           } else {

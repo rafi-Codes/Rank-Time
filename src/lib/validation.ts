@@ -55,3 +55,15 @@ export const emailSchema = z.string().trim().email().max(320).toLowerCase();
 export const otpSchema = z.string().trim().regex(/^\d{4,6}$/);
 
 export const passwordSchema = z.string().min(7).max(128);
+
+export const challengeSchema = z.object({
+  title: sanitizedString(5, 100),
+  description: sanitizedString(5, 250),
+  type: z.enum(['daily', 'weekly', 'monthly']).default('daily'),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  topics: z.array(sanitizedString(1, 50)).min(1).max(8),
+  bonusPoints: z.coerce.number().int().min(1).max(50),
+  points: z.coerce.number().int().min(0).max(100).optional(),
+  category: sanitizedString(1, 50),
+  deadline: z.coerce.date().refine((date) => date.getTime() > Date.now(), 'Challenge deadline must be in the future'),
+});

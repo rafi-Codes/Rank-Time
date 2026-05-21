@@ -10,6 +10,7 @@ export interface IChallenge extends Document {
   bonusPoints: number;
   points: number;
   category: string;
+  idempotencyKey: string;
   completed: boolean;
   completedAt?: Date;
   deadline: Date;
@@ -28,6 +29,7 @@ const ChallengeSchema = new Schema<IChallenge>(
     bonusPoints: { type: Number, required: true },
     points: { type: Number, required: true, default: 0 },
     category: { type: String, required: true, default: 'general' },
+    idempotencyKey: { type: String, required: true },
     completed: { type: Boolean, default: false },
     completedAt: { type: Date },
     deadline: { type: Date, required: true },
@@ -38,7 +40,8 @@ const ChallengeSchema = new Schema<IChallenge>(
 // Index for efficient queries
 ChallengeSchema.index({ userId: 1, type: 1, completed: 1 });
 ChallengeSchema.index({ userId: 1, deadline: 1 });
-ChallengeSchema.index({ userId: 1, type: 1, deadline: 1 }, { unique: true });
+ChallengeSchema.index({ userId: 1, type: 1, deadline: 1 });
+ChallengeSchema.index({ userId: 1, type: 1, deadline: 1, idempotencyKey: 1 }, { unique: true });
 ChallengeSchema.index({ deadline: 1 });
 
 export default mongoose.models?.Challenge || mongoose.model<IChallenge>('Challenge', ChallengeSchema);
