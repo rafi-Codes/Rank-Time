@@ -79,11 +79,12 @@ export default function CodeforcesTab() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch data');
+        throw new Error(data.error?.message || data.error || 'Failed to fetch data');
       }
 
-      setUserData(data.user);
-      setStats(data.stats);
+      const result = data.success ? data.data : data;
+      setUserData(result.user);
+      setStats(result.stats);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch Codeforces data');
     } finally {
@@ -132,14 +133,16 @@ export default function CodeforcesTab() {
         body: JSON.stringify({ handle: handle.trim() }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to connect');
+        throw new Error(data.error?.message || data.error || 'Failed to connect');
       }
 
       setIsConnected(true);
-      setConnectedHandle(handle.trim());
-      await fetchCodeforcesData(handle.trim());
+      const connected = data.data?.handle || handle.trim();
+      setConnectedHandle(connected);
+      await fetchCodeforcesData(connected);
     } catch (err: any) {
       setError(err.message || 'Failed to connect Codeforces account');
     } finally {

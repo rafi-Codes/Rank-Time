@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
@@ -7,19 +7,21 @@ import Badge from '@/models/Badge';
 import UserActivity from '@/models/UserActivity';
 import { generateChallengesForUser } from '@/lib/challenges';
 import User from '@/models/User';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
+import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     await dbConnect();
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
     }
 
     const { searchParams } = new URL(request.url);
@@ -27,7 +29,15 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'active';
 
     const now = new Date();
-    let query: any = { userId: user._id };
+    if (!['daily', 'weekly', 'monthly', 'all'].includes(type)) {
+      throw new ApiError('INVALID_CHALLENGE_TYPE', 'Invalid challenge type', 400);
+    }
+
+    if (!['active', 'completed', 'expired', 'all'].includes(status)) {
+      throw new ApiError('INVALID_CHALLENGE_STATUS', 'Invalid challenge status', 400);
+    }
+
+    const query: Record<string, unknown> = { userId: user._id };
 
     if (type !== 'all') query.type = type;
 
@@ -52,55 +62,46 @@ export async function GET(request: NextRequest) {
     if (status === 'active' && (type === 'weekly' || type === 'all')) {
       const weeklyChallenges = challenges.filter(c => c.type === 'weekly');
       if (weeklyChallenges.length === 0) {
-        console.log('No weekly challenges found, generating...');
         await generateChallengesForUser(user._id, { daily: false, weekly: true });
         challenges = await Challenge.find(query).sort({ createdAt: -1 }).limit(20);
-        console.log('After generation, total challenges:', challenges.length);
-        const newWeeklyCount = challenges.filter(c => c.type === 'weekly').length;
-        console.log('Weekly challenges generated:', newWeeklyCount);
       }
     }
 
-    return NextResponse.json({ challenges });
-  } catch (error) {
-    console.error('Error fetching challenges:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    return successResponse({ challenges }, 'Challenges fetched');
+});
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     await dbConnect();
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
     }
 
     const body = await request.json();
     const { challengeId, action } = body;
 
     if (!challengeId || !action) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      throw new ApiError('MISSING_REQUIRED_FIELDS', 'Missing required fields', 400);
     }
 
     const challenge = await Challenge.findOne({ _id: challengeId, userId: user._id });
     if (!challenge) {
-      return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
+      throw new ApiError('CHALLENGE_NOT_FOUND', 'Challenge not found', 404);
     }
 
     if (action === 'complete') {
       if (challenge.completed) {
-        return NextResponse.json({ error: 'Challenge already completed' }, { status: 400 });
+        throw new ApiError('CHALLENGE_ALREADY_COMPLETED', 'Challenge already completed', 400);
       }
 
       if (new Date() > challenge.deadline) {
-        return NextResponse.json({ error: 'Challenge has expired' }, { status: 400 });
+        throw new ApiError('CHALLENGE_EXPIRED', 'Challenge has expired', 400);
       }
 
       challenge.completed = true;
@@ -123,15 +124,11 @@ export async function POST(request: NextRequest) {
 
       await checkAndAwardBadges(user._id, challenge);
 
-      return NextResponse.json({ success: true, pointsEarned, challenge });
+      return successResponse({ pointsEarned, challenge }, 'Challenge completed');
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error) {
-    console.error('Error updating challenge:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    throw new ApiError('INVALID_ACTION', 'Invalid action', 400);
+});
 
 async function checkAndAwardBadges(userId: string, challenge: any) {
   try {
@@ -168,6 +165,6 @@ async function checkAndAwardBadges(userId: string, challenge: any) {
       );
     }
   } catch (error) {
-    console.error('Error checking badges:', error);
+    logger.error('Error checking badges', { userId, error });
   }
 }

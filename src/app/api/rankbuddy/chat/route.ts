@@ -1,52 +1,36 @@
-// src/app/api/rankbuddy/chat/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { OpenRouter } from '@openrouter/sdk';
+import { sendOpenRouterChat } from '@/lib/openRouterClient';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
 
 // Helper function to get fallback responses
-function getFallbackResponse() {
+function getFallbackResponse(message?: string) {
   const fallbackResponses = [
-    "That's a great question! Let's break it down together. What have you tried so far?",
-    "I'm here to guide you through this. What's your initial approach to solving this problem?",
-    "Let's think about this systematically. What are the key requirements?",
+    message ? `Let's reason about "${message.slice(0, 80)}" step by step. What constraints or edge cases stand out first?` : "Let's break it down together. What have you tried so far?",
+    "Start by identifying the input size, constraints, and the simplest brute-force approach before optimizing.",
+    "Try writing down the invariant you need to preserve, then test it against a small example.",
     "Have you considered the different ways to approach this problem?",
     "What concepts or techniques do you think might be relevant here?",
-    "Let's explore this together. What's the first step that comes to mind?"
+    "Compare a few sample cases manually and look for repeated subproblems or monotonic behavior."
   ];
 
-  const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-
-  return NextResponse.json({
-    response: randomResponse,
-    fallback: true,
-    provider: 'error-fallback'
-  });
+  return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
 }
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const { message, context } = await request.json();
 
-    if (!message) {
-      return NextResponse.json({ message: 'Message is required' }, { status: 400 });
+    if (!message || typeof message !== 'string') {
+      throw new ApiError('MISSING_MESSAGE', 'Message is required', 400);
     }
 
-    if (!process.env.OPENROUTER_API_KEY) {
-      return getFallbackResponse();
-    }
-
-    // Initialize OpenRouter
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
-
-    // Create a prompt that ensures the AI never gives direct answers
     const systemPrompt = `You are Rank Buddy, an AI coding tutor who NEVER gives direct answers or solutions to coding problems. Your role is to guide students through hints, questions, and learning techniques.
 
 RULES:
@@ -65,68 +49,49 @@ If someone asks for a direct solution, redirect them to think about the problem 
 
 Always respond in a conversational, encouraging way that helps students learn.`;
 
-    // Prepare messages for OpenRouter
     const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
       { role: 'system', content: systemPrompt }
     ];
 
-    // Add conversation history if available
-    if (context && context.length > 0) {
-      // Take last 5 messages to keep context manageable
+    if (Array.isArray(context) && context.length > 0) {
       const recentContext = context.slice(-5);
-      recentContext.forEach((msg: any) => {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        });
+      recentContext.forEach((msg: unknown) => {
+        if (msg && typeof msg === 'object' && 'content' in msg && typeof msg.content === 'string') {
+          messages.push({
+            role: 'role' in msg && msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          });
+        }
       });
     }
 
-    // Add current user message
     messages.push({ role: 'user', content: message });
 
-    try {
-      const completion = await openRouter.chat.send({
+    const completion = await sendOpenRouterChat({
+      circuitName: 'rankbuddy-chat',
+      cacheKeyParts: ['rankbuddy-chat', messages],
+      fallback: getFallbackResponse(message),
+      request: {
         model: 'openai/gpt-4o',
         messages: messages,
         stream: false,
         maxTokens: 1024,
         temperature: 0.7,
-      });
+      },
+    });
 
-      let aiResponse = completion.choices[0].message.content;
+    let aiResponse = completion.content;
 
-      // Ensure aiResponse is a string
-      if (typeof aiResponse !== 'string') {
-        aiResponse = 'I apologize, but I received an unexpected response format. Let\'s try a different approach to this problem.';
-      }
+    aiResponse = aiResponse.replace(/```[\s\S]*?```/g, '[code removed - try solving it yourself!]');
+    aiResponse = aiResponse.replace(/`[^`]*`/g, '[code removed]');
 
-      // Clean up the response to ensure it follows our guidelines
-      aiResponse = aiResponse.replace(/```[\s\S]*?```/g, '[code removed - try solving it yourself!]');
-      aiResponse = aiResponse.replace(/`[^`]*`/g, '[code removed]');
-
-      // Ensure response doesn't contain direct solutions
-      if (aiResponse.includes('function') || aiResponse.includes('def ') || aiResponse.includes('class ') || aiResponse.includes('public static void main')) {
-        aiResponse = "I can't provide code solutions, but I can help you think through the logic. What approach are you considering?";
-      }
-
-      return NextResponse.json({
-        response: aiResponse,
-        fallback: false,
-        provider: 'openrouter'
-      });
-
-    } catch (error: any) {
-      console.error('OpenRouter error:', error);
-
-      // Fallback response
-      return getFallbackResponse();
+    if (aiResponse.includes('function') || aiResponse.includes('def ') || aiResponse.includes('class ') || aiResponse.includes('public static void main')) {
+      aiResponse = "I can't provide code solutions, but I can help you think through the logic. What approach are you considering?";
     }
 
-  } catch (error) {
-    console.error('Error in Rank Buddy chat:', error);
-
-    // Fallback response
-    return getFallbackResponse();
-  }
-}
+    return successResponse({
+        response: aiResponse,
+        fallback: completion.fallback,
+        provider: completion.provider
+      }, 'Rank Buddy response generated');
+});

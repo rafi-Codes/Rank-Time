@@ -1,120 +1,94 @@
-// src/app/api/users/follow/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import mongoose from 'mongoose';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
+import { getCachedValue, setCachedValue } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const { targetUserId } = await request.json();
 
     if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
-      return NextResponse.json(
-        { message: 'Valid target user ID is required' },
-        { status: 400 }
-      );
+      throw new ApiError('INVALID_TARGET_USER', 'Valid target user ID is required', 400);
     }
 
     if (targetUserId === session.user.id) {
-      return NextResponse.json(
-        { message: 'Cannot follow yourself' },
-        { status: 400 }
-      );
+      throw new ApiError('CANNOT_FOLLOW_SELF', 'Cannot follow yourself', 400);
+    }
+
+    const idempotencyKey = request.headers.get('idempotency-key');
+    const cacheKey = idempotencyKey ? `follow:${session.user.id}:${idempotencyKey}` : null;
+    if (cacheKey) {
+      const cached = await getCachedValue<{ targetUser: unknown }>(cacheKey);
+      if (cached) {
+        return successResponse(cached, 'Successfully followed user');
+      }
     }
 
     await connectDB();
 
-    // Check if target user exists
-    const targetUser = await User.findById(targetUserId);
+    const targetUser = await User.findById(targetUserId).select('name usertag');
     if (!targetUser) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      );
+      throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
     }
 
-    // Check if already following
-    const currentUser = await User.findById(session.user.id);
-    if (!currentUser) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const isAlreadyFollowing = currentUser.following.some(
-      (followedUserId: mongoose.Types.ObjectId) => followedUserId.toString() === targetUserId
+    const currentUser = await User.findOneAndUpdate(
+      { _id: session.user.id, following: { $ne: targetUserId } },
+      { $addToSet: { following: targetUserId } },
+      { new: true }
     );
 
-    if (isAlreadyFollowing) {
-      return NextResponse.json(
-        { message: 'Already following this user' },
-        { status: 400 }
-      );
+    if (!currentUser) {
+      const exists = await User.exists({ _id: session.user.id });
+      if (!exists) {
+        throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
+      }
+      throw new ApiError('ALREADY_FOLLOWING', 'Already following this user', 400);
     }
 
-    // Add to following list
-    await User.findByIdAndUpdate(session.user.id, {
-      $push: { following: targetUserId }
-    });
-
-    return NextResponse.json({
-      message: 'Successfully followed user',
+    const response = {
       targetUser: {
         id: targetUser._id,
         name: targetUser.name,
         usertag: targetUser.usertag
       }
-    });
-  } catch (error) {
-    console.error('Follow user error:', error);
-    return NextResponse.json(
-      { message: 'Something went wrong!' },
-      { status: 500 }
-    );
-  }
-}
+    };
+    if (cacheKey) {
+      await setCachedValue(cacheKey, response, 24 * 60 * 60);
+    }
 
-export async function DELETE(request: NextRequest) {
-  try {
+    return successResponse(response, 'Successfully followed user');
+});
+
+export const DELETE = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const { searchParams } = new URL(request.url);
     const targetUserId = searchParams.get('targetUserId');
 
     if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
-      return NextResponse.json(
-        { message: 'Valid target user ID is required' },
-        { status: 400 }
-      );
+      throw new ApiError('INVALID_TARGET_USER', 'Valid target user ID is required', 400);
     }
 
     await connectDB();
 
-    // Remove from following list
     await User.findByIdAndUpdate(session.user.id, {
       $pull: { following: targetUserId }
     });
 
-    return NextResponse.json({ message: 'Successfully unfollowed user' });
-  } catch (error) {
-    console.error('Unfollow user error:', error);
-    return NextResponse.json(
-      { message: 'Something went wrong!' },
-      { status: 500 }
-    );
-  }
-}
+    return successResponse({ targetUserId }, 'Successfully unfollowed user');
+});

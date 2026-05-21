@@ -1,34 +1,35 @@
-// src/app/api/sessions/replay/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Session from '@/models/Session';
 import User from '@/models/User';
-import { OpenRouter } from '@openrouter/sdk';
+import { sendOpenRouterChat } from '@/lib/openRouterClient';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
     }
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+      throw new ApiError('MISSING_SESSION_ID', 'Session ID is required', 400);
     }
 
     // Get the specific session
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!sessionData) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      throw new ApiError('SESSION_NOT_FOUND', 'Session not found', 404);
     }
 
     // Get recent sessions for context (last 5 sessions)
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Generate AI analysis for this session
     const analysis = await generateSessionAnalysis(sessionData, recentSessions);
 
-    return NextResponse.json({
+    return successResponse({
       session: {
         _id: sessionData._id,
         problemName: sessionData.problemName,
@@ -65,20 +66,11 @@ export async function GET(request: NextRequest) {
         createdAt: sessionData.createdAt
       },
       analysis
-    });
-
-  } catch (error) {
-    console.error('Error fetching session replay:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    }, 'Session replay fetched');
+});
 
 async function generateSessionAnalysis(sessionData: any, recentSessions: any[]) {
   try {
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
-
     // Calculate performance metrics
     const lapsCount = Array.isArray(sessionData.laps) ? sessionData.laps.length : (typeof sessionData.laps === 'number' ? sessionData.laps : 0);
     const avgTimePerLap = lapsCount > 0 ? sessionData.totalTime / lapsCount : 0;
@@ -116,17 +108,23 @@ Recent Performance Context:
 
 Please provide a comprehensive analysis of this coding session.`;
 
-    const completion = await openRouter.chat.send({
-      model: 'openai/gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: analysisPrompt }
-      ],
-      maxTokens: 800,
-      temperature: 0.7,
+    const fallbackAnalysis = 'AI analysis is temporarily unavailable. Review your time per lap, compare the rating with recent practice, and identify one bottleneck to improve next session.';
+    const completion = await sendOpenRouterChat({
+      circuitName: 'session-replay',
+      cacheKeyParts: ['session-replay', sessionData._id?.toString(), sessionData.updatedAt],
+      fallback: fallbackAnalysis,
+      request: {
+        model: 'openai/gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: analysisPrompt }
+        ],
+        maxTokens: 800,
+        temperature: 0.7,
+      },
     });
 
-    const aiAnalysis = completion.choices[0].message.content;
+    const aiAnalysis = completion.content;
 
     // Generate additional insights
     const insights = {
@@ -148,7 +146,7 @@ Please provide a comprehensive analysis of this coding session.`;
     };
 
   } catch (error) {
-    console.error('Error generating AI analysis:', error);
+    logger.warn('Error generating AI analysis', { sessionId: sessionData._id, error });
     return {
       aiAnalysis: 'Unable to generate AI analysis at this time. Please try again later.',
       insights: {

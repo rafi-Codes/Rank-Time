@@ -1,28 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import UserActivity from '@/models/UserActivity';
+import User from '@/models/User';
+import { getCachedValue, setCachedValue } from '@/lib/cache';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (request: NextRequest) => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     await dbConnect();
 
-    // Find the user by email
-    const User = (await import('@/models/User')).default;
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
     }
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d'; // 7d, 30d, 90d, 1y
     const activityType = searchParams.get('type'); // Optional filter
+    const sparse = searchParams.get('sparse') === 'true';
 
     // Calculate date range
     const now = new Date();
@@ -42,13 +44,18 @@ export async function GET(request: NextRequest) {
         startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
         break;
       default:
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        throw new ApiError('INVALID_PERIOD', 'Period must be one of 7d, 30d, 90d, or 1y', 400);
     }
 
-    // Build query
-    let query: any = {
+    const cacheKey = `activity-heatmap:${user._id}:${period}:${activityType || 'all'}:${sparse}`;
+    const cached = await getCachedValue<unknown>(cacheKey);
+    if (cached) {
+      return successResponse(cached, 'Activity heatmap fetched');
+    }
+
+    const query: Record<string, unknown> = {
       userId: user._id,
-      createdAt: { $gte: startDate }
+      date: { $gte: startDate, $lte: now }
     };
 
     if (activityType) {
@@ -95,21 +102,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Fill in missing dates with zero activity
-    const heatmapData = [];
-    const currentDate = new Date(startDate);
+    const heatmapData = sparse ? Object.values(activityMap) : [];
 
-    while (currentDate <= now) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      heatmapData.push({
-        date: dateStr,
-        count: activityMap[dateStr]?.count || 0,
-        points: activityMap[dateStr]?.points || 0,
-        totalTime: activityMap[dateStr]?.totalTime || 0,
-        averageScore: activityMap[dateStr]?.averageScore || 0,
-        activities: activityMap[dateStr]?.activities || []
-      });
-      currentDate.setDate(currentDate.getDate() + 1);
+    if (!sparse) {
+      const currentDate = new Date(startDate);
+      while (currentDate <= now) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        heatmapData.push({
+          date: dateStr,
+          count: activityMap[dateStr]?.count || 0,
+          points: activityMap[dateStr]?.points || 0,
+          totalTime: activityMap[dateStr]?.totalTime || 0,
+          averageScore: activityMap[dateStr]?.averageScore || 0,
+          activities: activityMap[dateStr]?.activities || []
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
 
     // Calculate statistics
@@ -124,7 +132,7 @@ export async function GET(request: NextRequest) {
       { _id: '', totalSessions: 0, totalTime: 0, averageScore: 0, activities: [] }
     );
 
-    return NextResponse.json({
+    const result = {
       heatmapData,
       statistics: {
         totalActivities,
@@ -134,9 +142,8 @@ export async function GET(request: NextRequest) {
         mostActiveDay: mostActiveDay._id,
         period
       }
-    });
-  } catch (error) {
-    console.error('Error fetching activity heatmap:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    };
+
+    await setCachedValue(cacheKey, result, 60 * 60);
+    return successResponse(result, 'Activity heatmap fetched');
+});

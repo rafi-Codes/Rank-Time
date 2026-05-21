@@ -160,8 +160,9 @@ export default function RankBuddyTab() {
       const heatmapResponse = await fetch('/api/user/activity-heatmap');
       if (heatmapResponse.ok) {
         const heatmapResult = await heatmapResponse.json();
-        setHeatmapData(heatmapResult.heatmapData);
-        setHeatmapStats(heatmapResult.statistics);
+        const result = heatmapResult.success ? heatmapResult.data : heatmapResult;
+        setHeatmapData(result.heatmapData);
+        setHeatmapStats(result.statistics);
       }
 
       // Load improvement path
@@ -182,7 +183,8 @@ export default function RankBuddyTab() {
       // Load all challenges (daily and weekly)
       const response = await fetch('/api/user/challenges?type=all');
       if (response.ok) {
-        const data: { challenges: any[] } = await response.json();
+        const responseData = await response.json();
+        const data: { challenges: any[] } = responseData.success ? responseData.data : responseData;
         console.log('Loaded challenges:', data.challenges.length, 'total');
         const weeklyCount = data.challenges.filter((c: any) => c.type === 'weekly').length;
         const dailyCount = data.challenges.filter((c: any) => c.type === 'daily').length;
@@ -251,7 +253,7 @@ export default function RankBuddyTab() {
       const response = await fetch(`/api/sessions/replay?sessionId=${sessionId}`);
       if (response.ok) {
         const data = await response.json();
-        setReplayData(data);
+        setReplayData(data.success ? data.data : data);
       } else {
         console.error('Error loading replay data');
       }
@@ -291,12 +293,13 @@ export default function RankBuddyTab() {
 
       if (response.ok) {
         const data = await response.json();
+        const result = data.success ? data.data : data;
         const assistantMessage = {
           role: 'assistant' as const,
-          content: data.response,
+          content: result.response,
           timestamp: new Date(),
-          provider: data.provider,
-          fallback: data.fallback
+          provider: result.provider,
+          fallback: result.fallback
         };
         setMessages(prev => [...prev, assistantMessage]);
       }

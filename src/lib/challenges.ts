@@ -2,7 +2,20 @@ import Challenge from '@/models/Challenge';
 import Badge from '@/models/Badge';
 import UserActivity from '@/models/UserActivity';
 import Session from '@/models/Session';
-import { OpenRouter } from '@openrouter/sdk';
+import User from '@/models/User';
+import { logger } from '@/lib/logger';
+import { sendOpenRouterChat } from '@/lib/openRouterClient';
+import { challengeSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const weeklyChallengeAiSchema = z.object({
+  title: z.string().min(5).max(100),
+  description: z.string().min(5).max(250),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  topics: z.array(z.string().min(1).max(50)).min(1).max(8),
+  bonusPoints: z.number().int().min(5).max(20),
+  category: z.enum(['algorithms', 'data-structures', 'consistency', 'difficulty', 'practice', 'learning']),
+});
 
 export const pointsFor = (difficulty: string, isWeekly = false) => {
   if (difficulty === 'easy') return isWeekly ? 5 : 2;
@@ -12,16 +25,14 @@ export const pointsFor = (difficulty: string, isWeekly = false) => {
 
 async function generateAIWeeklyChallenges(userId: any) {
   try {
-    console.log('Starting AI weekly challenge generation for user:', userId);
+    logger.info('Starting AI weekly challenge generation', { userId });
 
     // Get user data for personalization
-    const user = await require('@/models/User').default.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
-      console.log('User not found, using fallback');
+      logger.warn('User not found for weekly challenge generation', { userId });
       return getFallbackWeeklyChallenges();
     }
-
-    console.log('User found:', user.name, 'League:', user.league);
 
     // Get recent activities and sessions
     const thirtyDaysAgo = new Date();
@@ -56,11 +67,6 @@ async function generateAIWeeklyChallenges(userId: any) {
         }
       }
     ]);
-
-    // Initialize OpenRouter
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
 
     // Prepare user data for AI
     const userData = {
@@ -121,77 +127,44 @@ Return exactly 3 challenges in this JSON format:
 Consider their league level (${userData.league}) and recent performance when setting difficulty and goals.
 `;
 
-    const completion = await openRouter.chat.send({
-      model: 'anthropic/claude-3-haiku',
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      maxTokens: 1000
+    const completion = await sendOpenRouterChat({
+      circuitName: 'weekly-challenges',
+      cacheKeyParts: ['weekly-challenges', userId.toString(), userData],
+      fallback: '',
+      request: {
+        model: 'anthropic/claude-3-haiku',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        maxTokens: 1000
+      },
     });
 
-    const response = completion.choices[0]?.message?.content;
+    const response = completion.content;
     if (!response || typeof response !== 'string') {
-      console.log('No valid AI response received');
       throw new Error('No valid response from AI');
     }
 
-    console.log('AI response received, parsing...');
-
-    // Parse and validate the response
     let challenges;
     try {
-      // Extract JSON from response (AI might add extra text)
       const jsonMatch = response.match(/\[[\s\S]*\]/);
       const jsonString = jsonMatch ? jsonMatch[0] : response;
       challenges = JSON.parse(jsonString);
-
-      if (!Array.isArray(challenges) || challenges.length !== 3) {
-        throw new Error('Invalid challenge format');
-      }
-
-      // Validate each challenge
-      challenges.forEach((challenge: any, index: number) => {
-        if (!challenge.title || !challenge.description || !challenge.difficulty ||
-            !challenge.topics || !Array.isArray(challenge.topics) ||
-            typeof challenge.bonusPoints !== 'number') {
-          throw new Error(`Invalid challenge ${index + 1} format`);
-        }
-
-        // Ensure valid difficulty
-        if (!['easy', 'medium', 'hard'].includes(challenge.difficulty)) {
-          challenge.difficulty = 'medium';
-        }
-
-        // Ensure valid category
-        const validCategories = ['algorithms', 'data-structures', 'consistency', 'difficulty', 'practice', 'learning'];
-        if (!validCategories.includes(challenge.category)) {
-          challenge.category = 'practice';
-        }
-
-        // Ensure reasonable bonus points
-        if (challenge.bonusPoints < 5 || challenge.bonusPoints > 20) {
-          challenge.bonusPoints = pointsFor(challenge.difficulty, true) * 0.5;
-        }
-      });
-
+      challenges = z.array(weeklyChallengeAiSchema).length(3).parse(challenges);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', response);
-      // Fallback to default challenges if AI fails
-      console.log('Using fallback challenges due to parse error');
+      logger.warn('Failed to parse AI challenge response', { userId, response, error: parseError });
       return getFallbackWeeklyChallenges();
     }
 
-    console.log('Successfully generated', challenges.length, 'AI challenges');
+    logger.info('AI weekly challenges generated', { userId, count: challenges.length });
     return challenges;
 
   } catch (error) {
-    console.error('Error generating AI weekly challenges:', error);
-    // Return fallback challenges if AI generation fails
-    console.log('Using fallback challenges due to error');
+    logger.warn('AI weekly challenge generation failed', { userId, error });
     return getFallbackWeeklyChallenges();
   }
 }
@@ -271,38 +244,58 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
     ];
 
     if (options.daily) {
-      const existingDaily = await Challenge.findOne({ userId, type: 'daily', deadline: { $gte: now }, completed: false });
-      if (!existingDaily) {
-        for (const challengeData of dailyChallenges) {
-          await Challenge.create({
-            userId,
-            ...challengeData,
-            points: pointsFor(String((challengeData as any).difficulty), false)
-          });
-        }
+      for (const challengeData of dailyChallenges) {
+        const idempotencyKey = `${challengeData.type}:${challengeData.title.toLowerCase().replace(/\s+/g, '-')}`;
+        const parsed = challengeSchema.parse({
+          ...challengeData,
+          points: pointsFor(challengeData.difficulty, false),
+        });
+        await Challenge.updateOne(
+          { userId, type: parsed.type, deadline: parsed.deadline, idempotencyKey },
+          {
+            $setOnInsert: {
+              userId,
+              ...parsed,
+              idempotencyKey,
+              completed: false,
+            },
+          },
+          { upsert: true }
+        );
       }
     }
 
     if (options.weekly) {
-      const existingWeekly = await Challenge.findOne({ userId, type: 'weekly', deadline: { $gte: now }, completed: false });
+      const existingWeekly = await Challenge.exists({ userId, type: 'weekly', deadline: { $gte: now }, completed: false });
       if (!existingWeekly) {
-        // Generate AI-powered weekly challenges
         const weeklyChallenges = await generateAIWeeklyChallenges(userId);
 
         for (const challengeData of weeklyChallenges) {
-          await Challenge.create({
-            userId,
+          const idempotencyKey = `weekly:${challengeData.title.toLowerCase().replace(/\s+/g, '-')}`;
+          const parsed = challengeSchema.parse({
             ...challengeData,
             type: 'weekly',
             deadline: endOfWeek,
-            points: pointsFor(String(challengeData.difficulty), true)
+            points: pointsFor(challengeData.difficulty, true)
           });
+          await Challenge.updateOne(
+            { userId, type: parsed.type, deadline: parsed.deadline, idempotencyKey },
+            {
+              $setOnInsert: {
+                userId,
+                ...parsed,
+                idempotencyKey,
+                completed: false,
+              },
+            },
+            { upsert: true }
+          );
         }
       }
     }
 
-    console.log(`Generated challenges for user ${userId} (daily:${!!options.daily}, weekly:${!!options.weekly})`);
+    logger.info('Generated challenges for user', { userId, daily: !!options.daily, weekly: !!options.weekly });
   } catch (error) {
-    console.error('Error generating challenges for user:', error);
+    logger.error('Error generating challenges for user', { userId, error });
   }
 }

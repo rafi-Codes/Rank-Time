@@ -1,71 +1,52 @@
-// src/app/api/user/connect-codeforces/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
+import { CodeforcesClientError, getCodeforcesProfile } from '@/lib/codeforcesClient';
+import { successResponse } from '@/lib/apiResponse';
+import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { handle } = await request.json();
-    if (!handle || typeof handle !== 'string') {
-      return NextResponse.json({ error: 'Valid handle is required' }, { status: 400 });
-    }
-
-    // Validate handle with Codeforces API
-    const userResponse = await fetch(
-      `https://codeforces.com/api/user.info?handles=${encodeURIComponent(handle)}`,
-      {
-        headers: {
-          'User-Agent': 'RankTime-App/1.0',
-        },
-      }
-    );
-
-    if (!userResponse.ok) {
-      return NextResponse.json(
-        { error: 'Invalid Codeforces handle' },
-        { status: 400 }
-      );
-    }
-
-    const userData = await userResponse.json();
-    if (userData.status !== 'OK' || !userData.result || userData.result.length === 0) {
-      return NextResponse.json(
-        { error: 'Codeforces handle not found' },
-        { status: 400 }
-      );
-    }
-
-    await connectDB();
-
-    const user = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { codeforcesHandle: handle },
-      { new: true }
-    );
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      handle: user.codeforcesHandle,
-      message: 'Codeforces account connected successfully'
-    });
-  } catch (error: any) {
-    console.error('Error connecting Codeforces:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to connect Codeforces account' },
-      { status: 500 }
-    );
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    throw new ApiError('UNAUTHORIZED', 'Unauthorized', 401);
   }
-}
+
+  const { handle } = await request.json();
+  if (!handle || typeof handle !== 'string') {
+    throw new ApiError('INVALID_CODEFORCES_HANDLE', 'Valid handle is required', 400);
+  }
+
+  let profile;
+  try {
+    profile = await getCodeforcesProfile(handle, 1);
+  } catch (error) {
+    if (error instanceof CodeforcesClientError) {
+      throw new ApiError(error.code, error.message, error.statusCode);
+    }
+    throw error;
+  }
+
+  await connectDB();
+
+  const user = await User.findOneAndUpdate(
+    { email: session.user.email },
+    { codeforcesHandle: profile.user.handle },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new ApiError('USER_NOT_FOUND', 'User not found', 404);
+  }
+
+  return successResponse(
+    {
+      handle: user.codeforcesHandle,
+      message: 'Codeforces account connected successfully',
+    },
+    'Codeforces account connected successfully'
+  );
+});

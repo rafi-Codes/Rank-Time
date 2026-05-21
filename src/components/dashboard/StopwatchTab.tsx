@@ -107,7 +107,8 @@ export default function StopwatchTab() {
       }
 
       const data = await response.json();
-      setRecentProblem(data.stats.recentSubmissions?.[0] || null);
+      const result = data.success ? data.data : data;
+      setRecentProblem(result.stats.recentSubmissions?.[0] || null);
     } catch (error) {
       console.error('Error fetching recent problems:', error);
       alert('Failed to fetch recent problems. Please try again.');
