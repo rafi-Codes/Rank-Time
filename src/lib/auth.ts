@@ -4,15 +4,15 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-import { connectToDatabase } from '@/lib/db';
+import connectDB from '@/lib/db';
 import { generateUserTag, normalizeEmail } from '@/lib/utils';
-import type { Db } from 'mongodb';
+import User from '@/models/User';
 
-async function generateUniqueUserTag(db: Db) {
+async function generateUniqueUserTag() {
   let usertag = generateUserTag();
   let attempts = 0;
 
-  while (await db.collection('users').findOne({ usertag })) {
+  while (await User.exists({ usertag })) {
     usertag = generateUserTag();
     attempts += 1;
 
@@ -34,10 +34,8 @@ async function getOrCreateOAuthUser(profile: {
   }
 
   const email = normalizeEmail(profile.email);
-  const client = await connectToDatabase();
-  const db = client.db();
-  const users = db.collection('users');
-  const existingUser = await users.findOne({ email });
+  await connectDB();
+  const existingUser = await User.findOne({ email });
 
   if (existingUser) {
     const updates: Record<string, unknown> = {
@@ -50,25 +48,25 @@ async function getOrCreateOAuthUser(profile: {
     if (profile.image && profile.image !== existingUser.image) updates.image = profile.image;
 
     if (!existingUser.usertag) {
-      updates.usertag = await generateUniqueUserTag(db);
+      updates.usertag = await generateUniqueUserTag();
     }
 
-    await users.updateOne({ _id: existingUser._id }, { $set: updates });
+    await User.updateOne({ _id: existingUser._id }, { $set: updates });
 
     return {
-      ...existingUser,
+      ...existingUser.toObject(),
       ...updates,
     };
   }
 
   const now = new Date();
-  const result = await users.insertOne({
+  return User.create({
     name: profile.name || email.split('@')[0],
     email,
     image: profile.image || null,
     verified: true,
     emailVerified: now,
-    usertag: await generateUniqueUserTag(db),
+    usertag: await generateUniqueUserTag(),
     following: [],
     totalScore: 0,
     currentStreak: 0,
@@ -79,8 +77,6 @@ async function getOrCreateOAuthUser(profile: {
     createdAt: now,
     updatedAt: now,
   });
-
-  return users.findOne({ _id: result.insertedId });
 }
 
 export const authOptions: NextAuthOptions = {
@@ -101,12 +97,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
-        let client;
         try {
-          client = await connectToDatabase();
-          const db = client.db();
+          await connectDB();
 
-          const user = await db.collection('users').findOne({
+          const user = await User.findOne({
             email,
           });
 

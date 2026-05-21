@@ -203,7 +203,7 @@ export default function StopwatchTab() {
         setComments('');
       } else {
         console.error('Save session failed:', data);
-        alert(data?.error || 'Failed to save session');
+        alert(data?.error?.message || data?.error || 'Failed to save session');
       }
     } catch (error) {
       console.error('Error saving session:', error);
