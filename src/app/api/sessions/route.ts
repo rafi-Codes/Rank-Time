@@ -7,6 +7,7 @@ import Session from '@/models/Session';
 import User from '@/models/User';
 import { generateUserTag } from '@/lib/utils';
 import UserActivity from '@/models/UserActivity';
+import { getLeagueForScore } from '@/lib/league';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -58,51 +59,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Calculate streak bonus
+    // Calculate streak bonus using the user's last active day so repeated sessions
+    // on the same date do not reset or incorrectly increment the streak.
     let streakBonus = 0;
-    const today = new Date();
-    const yesterdayStart = new Date(today);
-    yesterdayStart.setDate(today.getDate() - 1);
-    yesterdayStart.setHours(0, 0, 0, 0);
-    const yesterdayEnd = new Date(yesterdayStart);
-    yesterdayEnd.setHours(23, 59, 59, 999);
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-    const lastSessionYesterday = await Session.findOne({
-      user: user._id,
-      createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd }
-    }).sort({ createdAt: -1 });
+    const lastSessionDate = user.lastSessionDate ? new Date(user.lastSessionDate) : null;
+    const lastSessionDay = lastSessionDate ? new Date(lastSessionDate) : null;
 
-    if (lastSessionYesterday) {
+    if (lastSessionDay) {
+      lastSessionDay.setHours(0, 0, 0, 0);
+    }
+
+    if (lastSessionDay && lastSessionDay.getTime() === todayStart.getTime()) {
+      streakBonus = Math.floor((user.currentStreak || 0) / 5) * 5;
+    } else if (lastSessionDay && lastSessionDay.getTime() === yesterdayStart.getTime()) {
       user.currentStreak += 1;
-      if (user.currentStreak > user.maxStreak) {
-        user.maxStreak = user.currentStreak;
-      }
-      streakBonus = Math.floor(user.currentStreak / 5) * 5; // 5 bonus points every 5 consecutive days
+      streakBonus = Math.floor(user.currentStreak / 5) * 5;
     } else {
       user.currentStreak = 1;
+    }
+
+    if (user.currentStreak > user.maxStreak) {
+      user.maxStreak = user.currentStreak;
     }
 
     // Update user stats
     user.totalScore += score + streakBonus;
     user.totalSessions += 1;
+    user.lastSessionDate = now;
 
     // Ensure usertag exists (for legacy users)
     if (!user.usertag) {
       user.usertag = generateUserTag();
     }
 
-    // Update rank based on total score
-    const allUsers = await User.find({}).sort({ totalScore: -1 });
-    const userRank = allUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
-    user.rank = userRank;
-
-    // Update league based on score
-    if (user.totalScore >= 25000) user.league = 'Legend';
-    else if (user.totalScore >= 12000) user.league = 'Master';
-    else if (user.totalScore >= 6000) user.league = 'Expert';
-    else if (user.totalScore >= 2500) user.league = 'Advanced';
-    else if (user.totalScore >= 1200) user.league = 'Intermediate';
-    else user.league = 'Beginner';
+    user.rank = (await User.countDocuments({ totalScore: { $gt: user.totalScore } })) + 1;
+    user.league = getLeagueForScore(user.totalScore);
 
     await user.save();
 

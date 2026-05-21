@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:classic": "cross-env NEXT_EXPERIMENTAL_TURBOPACK=false next dev",
+    "build:classic": "cross-env NEXT_EXPERIMENTAL_TURBOPACK=false next build",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "typecheck": "tsc --noEmit",
     "test-db": "node test-db.js",
     "test-email": "node test-email.js",
     "test-email-send": "node test-email-send.js",
@@ -48,11 +51,17 @@
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "autoprefixer": "^10.4.16",
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.3",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.3"
+      "typescript": "5.3.3"
+  },
+  "devDependenciesMeta": {
+    "cross-env": {
+      "optional": false
+    }
   },
   "engines": {
     "node": ">=18.0.0"

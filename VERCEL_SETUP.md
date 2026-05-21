@@ -1,33 +1,59 @@
-# Vercel Environment Setup for Rank Time
+# Vercel Setup for RankTime
 
-Follow these steps to ensure NextAuth works correctly on Vercel and avoid sign-in freezes:
+## Required environment variables
 
-1. Open your Vercel dashboard and select the `rank-time` project.
-2. Go to **Settings → Environment Variables**.
-3. Add (or update) these variables for the `Production` environment:
+Add these in `Vercel -> Project Settings -> Environment Variables`:
 
-   - `NEXTAUTH_URL` = `https://rank-time.vercel.app`
-   - `NEXTAUTH_SECRET` = (a secure random string; e.g., run `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` locally)
-   - `MONGODB_URI` = (your production MongoDB connection string)
+```env
+MONGODB_URI=<your MongoDB Atlas connection string>
+NEXTAUTH_SECRET=<generate a long random secret>
+NEXTAUTH_URL=https://your-production-domain.vercel.app
+MAILJET_API_KEY=<required for signup/reset emails>
+MAILJET_SECRET_KEY=<required for signup/reset emails>
+FROM_EMAIL=<verified sender address>
+FROM_NAME=RankTime
+```
 
-4. If you use Mailjet for OTP emails, also add:
+Optional:
 
-   - `MAILJET_API_KEY`
-   - `MAILJET_SECRET_KEY`
-   - `FROM_EMAIL`
-   - `FROM_NAME`
+```env
+OPENROUTER_API_KEY=<optional, enables Rank Buddy AI responses>
+DEBUG_AUTH=false
+ENABLE_SCHEDULER=false
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_ID=
+GITHUB_SECRET=
+```
 
-5. For Preview branches, set `NEXTAUTH_URL` to the preview URL (Vercel provides one).
+Generate a secret locally with:
 
-6. Save variables and trigger a redeploy.
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-7. After deployment, test sign-in on other devices. If it still freezes, use the browser DevTools Network tab to inspect the POST to `/api/auth/callback/credentials` and the response headers — look for `Set-Cookie` and for `Secure` / `SameSite` attributes.
+## Vercel project settings
 
-8. If you need debugging logs, check the Vercel deployment logs; we added extra logging in `src/lib/auth.ts` to help capture callback errors.
-9. Optional temporary debugging flag
+- Framework preset: `Next.js`
+- Root directory: `ranktime`
+- Install command: `npm install`
+- Build command: `npm run build`
 
-   - Set `DEBUG_AUTH=true` in Vercel (Preview or Production temporarily) to enable extra server-side logging
-   - When `DEBUG_AUTH=true` you can call the safe endpoint `https://rank-time.vercel.app/api/debug/status` which returns non-sensitive environment checks (it will 404 when `DEBUG_AUTH` is not enabled)
+## MongoDB Atlas checklist
 
-   - Remember to set `DEBUG_AUTH` back to `false` or remove it after debugging to avoid extra log noise.
+- Use MongoDB Atlas for production.
+- Create a database user with read/write access.
+- Add Vercel access to Atlas Network Access. A common starter option is `0.0.0.0/0`, then tighten later if needed.
+- Put the final Atlas URI into `MONGODB_URI`.
 
+## Before going live
+
+1. Deploy once with the env vars above.
+2. Test signup, OTP verification, login, create session, logout, forgot-password OTP, and social follow/unfollow.
+3. If you use a custom domain, update `NEXTAUTH_URL` to that exact `https://` domain and redeploy.
+4. Keep `DEBUG_AUTH=false` in production unless you are actively debugging.
+
+## Notes
+
+- Rank Buddy works without `OPENROUTER_API_KEY`, but it will use built-in fallback responses instead of AI.
+- OTP email flows now depend on Mailjet being configured correctly; if Mailjet is missing or invalid, registration/reset will fail fast instead of pretending email was sent.

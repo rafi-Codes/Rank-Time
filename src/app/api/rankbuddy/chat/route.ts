@@ -31,10 +31,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { message, context, stream = false } = await request.json();
+    const { message, context } = await request.json();
 
     if (!message) {
       return NextResponse.json({ message: 'Message is required' }, { status: 400 });
+    }
+
+    if (!process.env.OPENROUTER_API_KEY) {
+      return getFallbackResponse();
     }
 
     // Initialize OpenRouter

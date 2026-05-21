@@ -1,13 +1,14 @@
 // src/components/dashboard/LeaderboardTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Medal, Award, Crown, User } from 'lucide-react';
+import { getLeagueLabel } from '@/lib/league';
 
 interface LeaderboardUser {
   _id: string;
@@ -31,64 +32,7 @@ export default function LeaderboardTab() {
   const [timeRange, setTimeRange] = useState('all');
   const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [sortBy, timeRange]);
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email && !currentUser) {
-      fetchCurrentUserStats();
-    } else if (status === 'unauthenticated') {
-      setCurrentUser(null); // Reset currentUser if user logs out
-    }
-  }, [status, session]);
-
-  // Additional effect to handle delayed session loading
-  useEffect(() => {
-    if (!currentUser) {
-      // Check immediately
-      if (status === 'authenticated' && session?.user?.email) {
-        fetchCurrentUserStats();
-      } else {
-        // Set up a check after a short delay in case session loads later
-        const timer = setTimeout(() => {
-          if (status === 'authenticated' && session?.user?.email && !currentUser) {
-            fetchCurrentUserStats();
-          }
-        }, 2000); // Check after 2 seconds
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []); // Only run on mount
-
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLeaderboard(data);
-
-        // Find current user in leaderboard
-        if (session?.user?.email) {
-          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
-          if (userInLeaderboard) {
-            setCurrentUser(userInLeaderboard);
-          } else {
-            // If not in top leaderboard, fetch user stats separately
-            await fetchCurrentUserStats();
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCurrentUserStats = async (retryCount = 0) => {
+  const fetchCurrentUserStats = useCallback(async (retryCount = 0) => {
     try {
       const response = await fetch('/api/user/stats');
       if (response.ok) {
@@ -118,7 +62,66 @@ export default function LeaderboardTab() {
         setTimeout(() => fetchCurrentUserStats(retryCount + 1), 2000);
       }
     }
-  };
+  }, []);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/leaderboard?sort=${sortBy}&timeRange=${timeRange}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data);
+
+        // Find current user in leaderboard
+        if (session?.user?.email) {
+          const userInLeaderboard = data.find((user: LeaderboardUser) => user.email === session.user.email);
+          if (userInLeaderboard) {
+            setCurrentUser(userInLeaderboard);
+          } else {
+            // If not in top leaderboard, fetch user stats separately
+            await fetchCurrentUserStats();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [sortBy, timeRange, session?.user?.email, fetchCurrentUserStats]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.email && !currentUser) {
+      fetchCurrentUserStats();
+    } else if (status === 'unauthenticated') {
+      setCurrentUser(null); // Reset currentUser if user logs out
+    }
+  }, [status, session, currentUser, fetchCurrentUserStats]);
+
+  // Additional effect to handle delayed session loading
+  useEffect(() => {
+    if (!currentUser) {
+      // Check immediately
+      if (status === 'authenticated' && session?.user?.email) {
+        fetchCurrentUserStats();
+      } else {
+        // Set up a check after a short delay in case session loads later
+        const timer = setTimeout(() => {
+          if (status === 'authenticated' && session?.user?.email && !currentUser) {
+            fetchCurrentUserStats();
+          }
+        }, 2000); // Check after 2 seconds
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [status, session, currentUser, fetchCurrentUserStats]); // Run on mount and when session/status change
+
+  // fetchLeaderboard and fetchCurrentUserStats are defined above using useCallback
 
   const getRankIcon = (position: number) => {
     switch (position) {
@@ -135,18 +138,20 @@ export default function LeaderboardTab() {
 
   const getLeagueColor = (league: string) => {
     switch (league.toLowerCase()) {
-      case 'legend':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'master':
+      case 'grandmaster':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'expert':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'advanced':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'intermediate':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'beginner':
+      case 'master':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'diamond':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'platinum':
+        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+      case 'gold':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'silver':
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
+      case 'bronze':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -231,7 +236,7 @@ export default function LeaderboardTab() {
 
                 <div className="flex items-center space-x-4">
                   <Badge className={getLeagueColor(user.league)}>
-                    {user.league}
+                    {getLeagueLabel(user.league)}
                   </Badge>
 
                   <div className="text-right">
@@ -283,7 +288,7 @@ export default function LeaderboardTab() {
 
               <div className="flex items-center space-x-4">
                 <Badge className={getLeagueColor(currentUser.league)}>
-                  {currentUser.league}
+                  {getLeagueLabel(currentUser.league)}
                 </Badge>
 
                 <div className="text-right">

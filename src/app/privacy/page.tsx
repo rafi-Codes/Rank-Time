@@ -68,7 +68,7 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none">
               <p>
-                RankTime ("we," "us," or "our") respects your privacy and is committed to protecting your personal information.
+                RankTime (we, us, or our) respects your privacy and is committed to protecting your personal information.
                 This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our
                 competitive programming tracking application.
               </p>
@@ -255,7 +255,7 @@ export default function PrivacyPage() {
             <CardContent className="prose dark:prose-invert max-w-none">
               <p>
                 We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements.
-                We will notify you of any material changes by posting the updated policy on this page and updating the "Last Updated" date.
+                We will notify you of any material changes by posting the updated policy on this page and updating the Last Updated date.
               </p>
               <p>
                 Your continued use of RankTime after any changes indicates your acceptance of the updated Privacy Policy.

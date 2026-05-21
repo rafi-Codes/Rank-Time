@@ -1,7 +1,7 @@
 // src/components/dashboard/RankBuddyTab.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,15 +152,7 @@ export default function RankBuddyTab() {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [replayLoading, setReplayLoading] = useState(false);
 
-  useEffect(() => {
-    loadUserData();
-    loadChallenges();
-    loadBadges();
-    loadSessions();
-    initializeChat();
-  }, []);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -183,9 +175,9 @@ export default function RankBuddyTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadChallenges = async () => {
+  const loadChallenges = useCallback(async () => {
     try {
       // Load all challenges (daily and weekly)
       const response = await fetch('/api/user/challenges?type=all');
@@ -207,9 +199,9 @@ export default function RankBuddyTab() {
     } catch (error) {
       console.error('Error loading challenges:', error);
     }
-  };
+  }, []);
 
-  const loadBadges = async () => {
+  const loadBadges = useCallback(async () => {
     try {
       const response = await fetch('/api/user/badges');
       if (response.ok) {
@@ -219,9 +211,9 @@ export default function RankBuddyTab() {
     } catch (error) {
       console.error('Error loading badges:', error);
     }
-  };
+  }, []);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const response = await fetch('/api/sessions');
       if (response.ok) {
@@ -232,7 +224,26 @@ export default function RankBuddyTab() {
       console.error('Error loading sessions:', error);
       setSessions([]);
     }
-  };
+  }, []);
+
+  const initializeChat = useCallback(() => {
+    const welcomeMessage = {
+      role: 'assistant' as const,
+      content: "👋 Hi there! I'm Rank Buddy, your AI coding companion. I won't give you direct answers, but I'll guide you with hints and questions to help you learn and improve. What would you like to work on today?",
+      timestamp: new Date(),
+      provider: 'system'
+    };
+    setMessages([welcomeMessage]);
+  }, []);
+
+  useEffect(() => {
+    loadUserData();
+    loadChallenges();
+    loadBadges();
+    loadSessions();
+    initializeChat();
+  }, [loadUserData, loadChallenges, loadBadges, loadSessions, initializeChat]);
+
 
   const loadReplayData = async (sessionId: string) => {
     try {
@@ -251,15 +262,7 @@ export default function RankBuddyTab() {
     }
   };
 
-  const initializeChat = () => {
-    const welcomeMessage = {
-      role: 'assistant' as const,
-      content: "👋 Hi there! I'm Rank Buddy, your AI coding companion. I won't give you direct answers, but I'll guide you with hints and questions to help you learn and improve. What would you like to work on today?",
-      timestamp: new Date(),
-      provider: 'system'
-    };
-    setMessages([welcomeMessage]);
-  };
+  // `initializeChat` is defined earlier as a stable `useCallback`.
 
   const sendMessage = async () => {
     if (!currentQuestion.trim()) return;
@@ -813,7 +816,7 @@ export default function RankBuddyTab() {
                   </div>
                   {session.comments && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">
-                      "{session.comments}"
+                      &ldquo;{session.comments}&rdquo;
                     </p>
                   )}
                 </div>
@@ -959,7 +962,7 @@ export default function RankBuddyTab() {
                             </h5>
                             {lap.comment && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
-                                "{lap.comment}"
+                                &ldquo;{lap.comment}&rdquo;
                               </p>
                             )}
                           </div>

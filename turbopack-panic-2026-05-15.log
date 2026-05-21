@@ -1,0 +1,9 @@
+---- Turbopack panic excerpt (2026-05-15) ----
+range start index 805306369 out of range for slice of length 999
+
+Context:
+- Next.js: 16.2.6
+- Node: 24 (observed during debugging session)
+- OS: Windows
+
+If you have the full temporary panic file (Next prints a temp path on crash), please replace this file with the full contents before filing an issue.

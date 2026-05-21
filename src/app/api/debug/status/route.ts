@@ -2,7 +2,7 @@
 // Enabled only when DEBUG_AUTH=true to avoid leaking production info.
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export function GET() {
   if (process.env.DEBUG_AUTH !== 'true') {

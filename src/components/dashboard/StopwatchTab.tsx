@@ -217,7 +217,7 @@ export default function StopwatchTab() {
       <Card>
         <CardHeader>
           <CardTitle>Problem Information</CardTitle>
-          <CardDescription>Enter details about the problem you're working on</CardDescription>
+          <CardDescription>Enter details about the problem you are working on</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Codeforces Problem Fetch */}

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import Session from '@/models/Session';
+import { LEAGUE_ORDER, LEAGUE_THRESHOLDS, getLeagueLabel } from '@/lib/league';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -44,20 +45,12 @@ export async function GET(request: NextRequest) {
     const averageRating = allSessions.length > 0 ? totalRating / allSessions.length : 0;
 
     // Calculate league progress
-    const leagueThresholds = {
-      'Beginner': 0,
-      'Intermediate': 1200,
-      'Advanced': 2500,
-      'Expert': 6000,
-      'Master': 12000,
-      'Legend': 25000
-    };
-
-    const leagues = Object.keys(leagueThresholds);
-    const currentLeagueIndex = leagues.indexOf(user.league);
+    const leagues = [...LEAGUE_ORDER];
+    const currentLeague = (user.league || 'bronze') as keyof typeof LEAGUE_THRESHOLDS;
+    const currentLeagueIndex = leagues.indexOf(currentLeague);
     const nextLeague = currentLeagueIndex < leagues.length - 1 ? leagues[currentLeagueIndex + 1] : null;
-    const nextThreshold = nextLeague ? leagueThresholds[nextLeague as keyof typeof leagueThresholds] : null;
-    const currentThreshold = leagueThresholds[user.league as keyof typeof leagueThresholds] || 0;
+    const nextThreshold = nextLeague ? LEAGUE_THRESHOLDS[nextLeague] : null;
+    const currentThreshold = LEAGUE_THRESHOLDS[currentLeague] || 0;
 
     const leagueProgress = nextThreshold
       ? ((user.totalScore - currentThreshold) / (nextThreshold - currentThreshold)) * 100
@@ -73,7 +66,8 @@ export async function GET(request: NextRequest) {
         currentStreak: user.currentStreak || 0,
         maxStreak: user.maxStreak || 0,
         rank: currentUserRank,
-        league: user.league || 'Beginner',
+        league: user.league || 'bronze',
+        leagueLabel: getLeagueLabel(user.league || 'bronze'),
         totalSessions: user.totalSessions || 0
       },
       additionalStats: {
@@ -82,6 +76,7 @@ export async function GET(request: NextRequest) {
         averageRating: Math.round(averageRating || 0),
         leagueProgress: Math.min(100, Math.max(0, leagueProgress || 0)),
         nextLeague,
+        nextLeagueLabel: nextLeague ? getLeagueLabel(nextLeague) : null,
         nextThreshold
       },
       recentSessions: recentSessions || []

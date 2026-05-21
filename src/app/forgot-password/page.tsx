@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="max-w-md mx-auto py-12">
       <h2 className="text-2xl font-semibold mb-4">Forgot Password</h2>
-      <p className="text-sm text-gray-600 mb-4">Enter your account email and we'll send a reset link.</p>
+      <p className="text-sm text-gray-600 mb-4">Enter your account email and we will send a reset link.</p>
       <form onSubmit={submit} className="space-y-4">
         <input
           value={email}

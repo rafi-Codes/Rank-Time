@@ -73,7 +73,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none">
               <p>
-                By accessing and using RankTime ("the Service"), you agree to be bound by these Terms of Service ("Terms").
+                By accessing and using RankTime (the Service), you agree to be bound by these Terms of Service (Terms).
                 If you do not agree to these Terms, please do not use the Service.
               </p>
               <p>
@@ -143,7 +143,7 @@ export default function TermsPage() {
               <p>You agree to use the Service only for lawful purposes and in accordance with these Terms. You shall not:</p>
               <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
                 <li>Use the Service to violate any applicable laws or regulations</li>
-                <li>Attempt to gain unauthorized access to our systems or other users' accounts</li>
+                <li>Attempt to gain unauthorized access to our systems or other users&#39; accounts</li>
                 <li>Upload or transmit harmful code, viruses, or malicious content</li>
                 <li>Harass, abuse, or harm other users</li>
                 <li>Impersonate any person or entity</li>
@@ -161,7 +161,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none">
               <p>
-                You retain ownership of any content you submit to the Service ("User Content"). By submitting User Content,
+                You retain ownership of any content you submit to the Service (User Content). By submitting User Content,
                 you grant us a worldwide, non-exclusive, royalty-free license to use, display, and distribute your content
                 solely for the purpose of providing and improving the Service.
               </p>
@@ -220,7 +220,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose dark:prose-invert max-w-none">
               <p>
-                The Service is provided "as is" and "as available" without warranties of any kind, either express or implied.
+                The Service is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without warranties of any kind, either express or implied.
                 We do not warrant that the Service will be error-free, secure, or meet your specific requirements.
               </p>
               <p>

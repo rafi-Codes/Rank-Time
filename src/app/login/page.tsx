@@ -44,10 +44,8 @@ export default function LoginPage() {
       setError(result.error);
       setIsLoading(false);
     } else if (result?.ok) {
-      console.log('Sign in successful, refetching session...');
       // Refetch session to ensure it's updated
       await getSession();
-      console.log('Session refetched, redirecting to dashboard');
       router.push('/dashboard');
     } else {
       console.error('Sign in result:', result);
@@ -147,7 +145,7 @@ export default function LoginPage() {
               <h4 className="text-sm font-medium mb-2">Reset password via email OTP</h4>
               {!otpSent ? (
                 <>
-                  <p className="text-sm text-gray-600 mb-2">Enter your account email and we'll send a one-time code.</p>
+                  <p className="text-sm text-gray-600 mb-2">Enter your account email and we will send a one-time code.</p>
                   <div className="flex gap-2">
                     <input
                       value={email}
@@ -157,6 +155,7 @@ export default function LoginPage() {
                       className="flex-1 p-2 border rounded"
                     />
                     <button
+                      type="button"
                       onClick={async () => {
                         setFpStatus('');
                         try {
@@ -203,6 +202,7 @@ export default function LoginPage() {
                   />
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={async () => {
                         setFpStatus('');
                         if (newPassword !== confirmPassword) { setFpStatus('Passwords do not match'); return; }
@@ -231,6 +231,7 @@ export default function LoginPage() {
                       className="px-3 py-2 bg-green-600 text-white rounded"
                     >Reset</button>
                     <button
+                      type="button"
                       onClick={() => { setShowForgot(false); setOtpSent(false); setFpStatus(''); }}
                       className="px-3 py-2 bg-gray-300 dark:bg-gray-700 rounded"
                     >Cancel</button>
@@ -243,8 +244,8 @@ export default function LoginPage() {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+            Do not have an account?{' '}
             <Link
               href="/register"
               className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"

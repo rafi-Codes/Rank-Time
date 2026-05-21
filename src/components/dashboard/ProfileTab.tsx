@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Trophy, Target, TrendingUp, Calendar, Award, Zap, Shuffle } from 'lucide-react';
+import { LEAGUE_ORDER, LEAGUE_THRESHOLDS, getLeagueLabel } from '@/lib/league';
 
 interface UserStats {
   user: {
@@ -20,6 +21,7 @@ interface UserStats {
     maxStreak: number;
     rank: number;
     league: string;
+    leagueLabel?: string;
     totalSessions: number;
   };
   additionalStats: {
@@ -28,27 +30,20 @@ interface UserStats {
     averageRating: number;
     leagueProgress: number;
     nextLeague: string | null;
+    nextLeagueLabel?: string | null;
     nextThreshold: number | null;
   };
   recentSessions: any[];
 }
 
-const LEAGUE_THRESHOLDS = {
-  'Beginner': 0,
-  'Intermediate': 1200,
-  'Advanced': 2500,
-  'Expert': 6000,
-  'Master': 12000,
-  'Legend': 25000
-};
-
 const LEAGUE_COLORS = {
-  'Beginner': 'bg-blue-500',
-  'Intermediate': 'bg-green-500',
-  'Advanced': 'bg-yellow-500',
-  'Expert': 'bg-orange-500',
-  'Master': 'bg-red-500',
-  'Legend': 'bg-purple-500'
+  bronze: 'bg-amber-600',
+  silver: 'bg-slate-400',
+  gold: 'bg-yellow-500',
+  platinum: 'bg-cyan-500',
+  diamond: 'bg-blue-500',
+  master: 'bg-purple-500',
+  grandmaster: 'bg-red-500',
 };
 
 export default function ProfileTab() {
@@ -120,7 +115,7 @@ export default function ProfileTab() {
   };
 
   const getNextLeague = (currentLeague: string, score: number) => {
-    const leagues = Object.keys(LEAGUE_THRESHOLDS) as Array<keyof typeof LEAGUE_THRESHOLDS>;
+    const leagues = [...LEAGUE_ORDER];
     const currentIndex = leagues.indexOf(currentLeague as keyof typeof LEAGUE_THRESHOLDS);
 
     if (currentIndex < leagues.length - 1) {
@@ -212,7 +207,7 @@ export default function ProfileTab() {
               </div>
               <div className="flex items-center space-x-2 mt-2">
                 <Badge className={`${LEAGUE_COLORS[stats.user.league as keyof typeof LEAGUE_COLORS] || 'bg-gray-500'} text-white`}>
-                  {stats.user.league.charAt(0).toUpperCase() + stats.user.league.slice(1)}
+                  {stats.user.leagueLabel || getLeagueLabel(stats.user.league)}
                 </Badge>
                 <span className="text-sm text-gray-500">Rank #{stats.user.rank}</span>
               </div>
@@ -278,14 +273,14 @@ export default function ProfileTab() {
               League Progress
             </CardTitle>
             <CardDescription>
-              Progress to {nextLeague.league.charAt(0).toUpperCase() + nextLeague.league.slice(1)} League
+              Progress to {stats.additionalStats.nextLeagueLabel || getLeagueLabel(nextLeague.league)} League
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{stats.user.league.charAt(0).toUpperCase() + stats.user.league.slice(1)}</span>
-                <span>{nextLeague.league.charAt(0).toUpperCase() + nextLeague.league.slice(1)}</span>
+                <span>{stats.user.leagueLabel || getLeagueLabel(stats.user.league)}</span>
+                <span>{stats.additionalStats.nextLeagueLabel || getLeagueLabel(nextLeague.league)}</span>
               </div>
               <Progress value={nextLeague.progress} className="h-3" />
               <p className="text-sm text-gray-600 dark:text-gray-400">

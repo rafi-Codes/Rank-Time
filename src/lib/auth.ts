@@ -3,6 +3,7 @@ import { hash, compare } from 'bcryptjs';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { connectToDatabase } from '@/lib/db';
+import { normalizeEmail } from '@/lib/utils';
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
@@ -16,8 +17,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials) return null;
-
-        console.log('NextAuth authorize called for:', credentials.email);
+        const email = normalizeEmail(credentials.email);
+        const password = credentials.password?.trim() ?? '';
+        if (!email || !password) {
+          throw new Error('Email and password are required');
+        }
 
         let client;
         try {
@@ -25,34 +29,26 @@ export const authOptions: NextAuthOptions = {
           const db = client.db();
 
           const user = await db.collection('users').findOne({
-            email: credentials.email,
+            email,
           });
 
-          console.log('User found:', !!user);
-
           if (!user) {
-            console.log('No user found for email:', credentials.email);
-            throw new Error('No user found!');
+            throw new Error('Invalid email or password');
           }
 
           if (user.verified === false) {
-            console.log('User not verified:', credentials.email);
             throw new Error('Email not verified');
           }
 
-          const isValid = await verifyPassword(
-            credentials.password,
-            user.password
-          );
-
-          console.log('Password valid:', isValid);
-
-          if (!isValid) {
-            console.log('Invalid password for:', credentials.email);
-            throw new Error('Invalid password!');
+          if (!user.password) {
+            throw new Error('Password login is not available for this account');
           }
 
-          console.log('Login successful for:', credentials.email);
+          const isValid = await verifyPassword(password, user.password);
+
+          if (!isValid) {
+            throw new Error('Invalid email or password');
+          }
 
           return {
             id: user._id.toString(),
@@ -64,7 +60,6 @@ export const authOptions: NextAuthOptions = {
           console.error('Auth error:', error);
           throw error;
         }
-        // Don't close client in serverless - let connection pool handle it
       },
     }),
   ],
@@ -76,44 +71,10 @@ export const authOptions: NextAuthOptions = {
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'none', // Always none for Vercel
-        path: '/',
-        secure: true, // Always secure for Vercel
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-      },
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-        maxAge: 24 * 60 * 60, // 24 hours
-      },
-    },
-    csrfToken: {
-      name: 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'none',
-        path: '/',
-        secure: true,
-      },
-    },
-  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       try {
-        console.log('JWT callback called', { hasUser: !!user, hasAccount: !!account, tokenSub: token.sub });
-        // Persist the OAuth access_token and or the user id to the token right after signin
-        if (account) {
-          token.accessToken = account.access_token;
-        }
         if (user) {
           token.id = user.id;
           token.email = user.email as string;
@@ -128,8 +89,6 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
-        console.log('Session callback called', { hasToken: !!token, tokenId: token.id });
-        // Send properties to the client, like an access_token and user id from a provider
         if (token) {
           session.user.id = token.id as string;
           session.user.email = token.email as string;

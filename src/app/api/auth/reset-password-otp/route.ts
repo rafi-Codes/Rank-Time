@@ -3,13 +3,16 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import User from '@/models/User';
 import { hashPassword } from '@/lib/auth';
+import { normalizeEmail } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, otp, password } = body;
+    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+    const otp = typeof body.otp === 'string' ? body.otp.trim() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
 
     if (!email || !otp || !password) {
       return NextResponse.json({ message: 'Invalid request' }, { status: 400 });
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
     const db = client.db();
 
     const otpRecord = await db.collection('emailOtps').findOne({
-      email: email.toLowerCase(),
+      email,
       otp,
       purpose: 'reset',
       expiresAt: { $gt: new Date() }
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
     await user.save();
 
     // cleanup used otps
-    await db.collection('emailOtps').deleteMany({ email: email.toLowerCase(), purpose: 'reset' });
+    await db.collection('emailOtps').deleteMany({ email, purpose: 'reset' });
 
     return NextResponse.json({ message: 'Password reset successful' });
   } catch (err) {
