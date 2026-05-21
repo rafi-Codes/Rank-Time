@@ -2,8 +2,86 @@
 import { hash, compare } from 'bcryptjs';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GitHubProvider from 'next-auth/providers/github';
+import GoogleProvider from 'next-auth/providers/google';
 import { connectToDatabase } from '@/lib/db';
-import { normalizeEmail } from '@/lib/utils';
+import { generateUserTag, normalizeEmail } from '@/lib/utils';
+import type { Db } from 'mongodb';
+
+async function generateUniqueUserTag(db: Db) {
+  let usertag = generateUserTag();
+  let attempts = 0;
+
+  while (await db.collection('users').findOne({ usertag })) {
+    usertag = generateUserTag();
+    attempts += 1;
+
+    if (attempts > 10) {
+      throw new Error('Failed to generate unique usertag');
+    }
+  }
+
+  return usertag;
+}
+
+async function getOrCreateOAuthUser(profile: {
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+}) {
+  if (!profile.email) {
+    throw new Error('OAuth account does not expose a verified email address');
+  }
+
+  const email = normalizeEmail(profile.email);
+  const client = await connectToDatabase();
+  const db = client.db();
+  const users = db.collection('users');
+  const existingUser = await users.findOne({ email });
+
+  if (existingUser) {
+    const updates: Record<string, unknown> = {
+      verified: true,
+      emailVerified: existingUser.emailVerified || new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (profile.name && profile.name !== existingUser.name) updates.name = profile.name;
+    if (profile.image && profile.image !== existingUser.image) updates.image = profile.image;
+
+    if (!existingUser.usertag) {
+      updates.usertag = await generateUniqueUserTag(db);
+    }
+
+    await users.updateOne({ _id: existingUser._id }, { $set: updates });
+
+    return {
+      ...existingUser,
+      ...updates,
+    };
+  }
+
+  const now = new Date();
+  const result = await users.insertOne({
+    name: profile.name || email.split('@')[0],
+    email,
+    image: profile.image || null,
+    verified: true,
+    emailVerified: now,
+    usertag: await generateUniqueUserTag(db),
+    following: [],
+    totalScore: 0,
+    currentStreak: 0,
+    maxStreak: 0,
+    league: 'bronze',
+    rank: 0,
+    totalSessions: 0,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return users.findOne({ _id: result.insertedId });
+}
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
@@ -62,6 +140,27 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
+    ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET
+      ? [
+          GitHubProvider({
+            clientId: process.env.GITHUB_ID,
+            clientSecret: process.env.GITHUB_SECRET,
+            authorization: {
+              params: {
+                scope: 'read:user user:email',
+              },
+            },
+          }),
+        ]
+      : []),
   ],
   session: {
     strategy: 'jwt',
@@ -73,10 +172,36 @@ export const authOptions: NextAuthOptions = {
   },
   useSecureCookies: process.env.NODE_ENV === 'production',
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      if (account?.provider === 'google' || account?.provider === 'github') {
+        await getOrCreateOAuthUser({
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        });
+      }
+
+      return true;
+    },
+    async jwt({ token, user, account }) {
       try {
         if (user) {
-          token.id = user.id;
+          if (account?.provider === 'google' || account?.provider === 'github') {
+            const dbUser = await getOrCreateOAuthUser({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+            });
+
+            if (!dbUser) {
+              throw new Error('Failed to load OAuth user');
+            }
+
+            token.id = dbUser._id.toString();
+          } else {
+            token.id = user.id;
+          }
+
           token.email = user.email as string;
           token.name = user.name as string;
           token.picture = user.image as string;

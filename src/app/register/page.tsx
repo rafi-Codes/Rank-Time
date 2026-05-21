@@ -63,27 +63,27 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
+    <div className="page-shell flex min-h-screen items-center justify-center px-4 py-16">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4">
         <div className="flex justify-center">
           <Link href="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">RankTime</span>
+            <span className="brand-gradient text-xl font-bold">RankTime</span>
           </Link>
         </div>
       </div>
 
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md dark:bg-gray-800">
+      <div className="glass-panel w-full max-w-md space-y-8 rounded-xl p-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Create an account</h1>
+          <h1 className="text-3xl font-bold text-foreground">Create an account</h1>
           <p className="text-muted-foreground mt-2">Enter your details to get started</p>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-              <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+              <div className="text-sm text-destructive">{error}</div>
             </div>
           )}
 
@@ -144,7 +144,7 @@ export default function RegisterPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+              className="font-semibold text-primary hover:underline"
             >
               Sign in
             </Link>
@@ -153,8 +153,8 @@ export default function RegisterPage() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+      <footer className="absolute bottom-0 left-0 right-0 hidden border-t border-border/70 py-6 text-center text-sm text-muted-foreground md:block">
+        <div>
           <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
           <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
         </div>

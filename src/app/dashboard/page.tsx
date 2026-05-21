@@ -19,7 +19,7 @@ import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
 import RankBuddyTab from '@/components/dashboard/RankBuddyTab';
 import { ModeToggle } from '@/components/mode-toggle';
-import { LogOut } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 
 function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -42,22 +42,20 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
   ];
 
   return (
-    <div className="inline-block text-left">
+    <div className="relative inline-block text-left">
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex items-center justify-center rounded px-4 py-2 sm:px-6 sm:py-3 bg-white dark:bg-gray-800 border shadow-sm hover:shadow-md transition"
+        className="glass-panel inline-flex h-10 w-10 items-center justify-center rounded-lg text-foreground transition hover:border-primary/60 hover:text-primary"
       >
-        <svg className="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu className="h-5 w-5" />
         <span className="sr-only">More tabs</span>
       </button>
 
       {open && (
-        <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-w-[calc(100vw-2rem)]">
+        <div className="glass-panel absolute right-0 z-50 mt-2 w-44 max-w-[calc(100vw-2rem)] origin-top-right overflow-hidden rounded-lg focus:outline-none">
           <div className="py-1">
             {items.map((it) => (
               <button
@@ -66,7 +64,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
                   onSelect(it.value);
                   setOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="w-full px-4 py-2 text-left text-sm text-foreground transition hover:bg-primary/10 hover:text-primary"
               >
                 {it.label}
               </button>
@@ -79,7 +77,7 @@ function MoreMenu({ onSelect }: { onSelect: (val: string) => void }) {
 }
 
 export default function Dashboard() {
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('stopwatch');
   const [localSession, setLocalSession] = useState<Session | null>(null);
@@ -102,7 +100,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === 'loading') {
       const timer = setTimeout(() => {
-        console.log('Loading timeout reached, forcing redirect');
         setLoadingTimeout(true);
       }, 10000); // 10 seconds timeout
 
@@ -122,7 +119,7 @@ export default function Dashboard() {
         } else {
           router.push('/login');
         }
-      }).catch((error) => {
+      }).catch(() => {
         router.push('/login');
       });
     }
@@ -130,24 +127,23 @@ export default function Dashboard() {
 
   if (status === 'loading' && !loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="page-shell flex min-h-screen items-center justify-center">
+        <div className="h-24 w-24 animate-spin rounded-full border-4 border-primary/20 border-b-primary"></div>
       </div>
     );
   }
 
   if (status === 'loading' && loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="text-red-600 dark:text-red-400 text-xl mb-4">Loading Timeout</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Session loading took too long. Please check your environment variables.</p>
-          <button
+      <div className="page-shell flex min-h-screen items-center justify-center px-4">
+        <div className="glass-panel max-w-md rounded-xl p-8 text-center">
+          <div className="mb-4 text-xl font-semibold text-destructive">Loading Timeout</div>
+          <p className="mb-4 text-muted-foreground">Session loading took too long. Please check your environment variables.</p>
+          <Button
             onClick={() => router.push('/login')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Go to Login
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -164,14 +160,14 @@ export default function Dashboard() {
   const safeSession = currentSession;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="page-shell min-h-screen">
       {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-40">
+      <nav className="glass-panel sticky top-0 z-40 border-x-0 border-t-0 rounded-none">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center space-x-1 sm:space-x-2 cursor-pointer min-w-0 flex-1" onClick={() => setActiveTab('stopwatch')}>
               <img src="/logo.svg" alt="RankTime Logo" className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
-              <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-white truncate">RankTime</h1>
+              <h1 className="brand-gradient truncate text-sm font-bold sm:text-lg lg:text-xl">RankTime</h1>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {/* Mobile: Show only sign out button */}
@@ -180,20 +176,20 @@ export default function Dashboard() {
                   <img
                     src={safeSession.user.image}
                     alt="Profile Avatar"
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300 dark:border-gray-600"
+                    className="h-6 w-6 rounded-full border border-primary/30 sm:h-8 sm:w-8"
                   />
                 ) : (
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-cyan-primary),var(--color-cyan-light))] sm:h-8 sm:w-8">
                     <span className="text-xs font-bold text-white">
                       {(safeSession.user?.name?.charAt(0) || safeSession.user?.email?.charAt(0) || 'U').toUpperCase()}
                     </span>
                   </div>
                 )}
-                <span className="hidden lg:block text-sm text-gray-700 dark:text-gray-300">
+                <span className="hidden text-sm text-muted-foreground lg:block">
                   Welcome,{' '}
                   <button
                     onClick={() => setActiveTab('profile')}
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition-colors"
+                    className="font-semibold text-primary underline-offset-4 transition-colors hover:underline"
                   >
                     {safeSession.user?.name || safeSession.user?.email}
                   </button>
@@ -214,10 +210,10 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="mb-4 sm:mb-6 lg:mb-8">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="mt-1 sm:mt-2 text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400">
+          <h2 className="text-xl font-bold text-foreground sm:text-2xl lg:text-3xl">Dashboard</h2>
+          <p className="mt-1 text-xs text-muted-foreground sm:mt-2 sm:text-sm lg:text-base">
             Track your competitive programming progress and performance
           </p>
         </div>
@@ -235,10 +231,10 @@ export default function Dashboard() {
 
             {/* Controls section - right aligned on mobile */}
             <div className="flex items-center justify-end space-x-1 sm:space-x-2 order-1 sm:order-2">
-              <div className="scale-75 sm:scale-100">
+              <div>
                 <ModeToggle />
               </div>
-              <div className="scale-75 sm:scale-100">
+              <div>
                 <MoreMenu
                   onSelect={(val: string) => {
                     setActiveTab(val);
@@ -286,13 +282,13 @@ export default function Dashboard() {
         </Tabs>
 
         {/* Footer */}
-        <footer className="mt-8 sm:mt-12 py-6 sm:py-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <footer className="mt-8 border-t border-border/70 py-6 sm:mt-12 sm:py-8">
+          <div className="text-center text-xs text-muted-foreground sm:text-sm">
             <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
             <p className="mt-1 sm:mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
           </div>
         </footer>
-      </div>
+      </main>
     </div>
   );
 }

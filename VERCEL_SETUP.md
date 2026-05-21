@@ -32,6 +32,22 @@ Generate a secret locally with:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+## OAuth callback URLs
+
+If you enable Google login, add this authorized redirect URI in Google Cloud Console:
+
+```text
+https://your-production-domain.vercel.app/api/auth/callback/google
+```
+
+If you enable GitHub login, add this authorization callback URL in the GitHub OAuth app:
+
+```text
+https://your-production-domain.vercel.app/api/auth/callback/github
+```
+
+For the default Vercel domain, replace `your-production-domain.vercel.app` with `rank-time.vercel.app`.
+
 ## Vercel project settings
 
 - Framework preset: `Next.js`
