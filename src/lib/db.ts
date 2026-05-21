@@ -1,8 +1,8 @@
 // src/lib/db.ts
-import { MongoClient } from 'mongodb';
+import { MongoClient, type MongoClientOptions } from 'mongodb';
 import mongoose from 'mongoose';
 
-const options = {
+const options: MongoClientOptions = {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
@@ -10,7 +10,6 @@ const options = {
   tls: true,
   tlsInsecure: process.env.NODE_ENV === 'development', // Only for dev
   retryWrites: true,
-  w: 'majority',
 };
 
 declare global {
