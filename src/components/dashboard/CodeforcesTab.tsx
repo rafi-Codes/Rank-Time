@@ -63,7 +63,23 @@ export default function CodeforcesTab() {
   const [error, setError] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [connectedHandle, setConnectedHandle] = useState<string | null>(null);
-  
+
+  useEffect(() => {
+    const storedHandle = localStorage.getItem('ranktime-codeforces-handle');
+    if (storedHandle) {
+      setConnectedHandle(storedHandle);
+      setHandle(storedHandle);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (connectedHandle) {
+      localStorage.setItem('ranktime-codeforces-handle', connectedHandle);
+    } else {
+      localStorage.removeItem('ranktime-codeforces-handle');
+    }
+  }, [connectedHandle]);
+
   const fetchCodeforcesData = useCallback(async (userHandle?: string) => {
     const targetHandle = userHandle || handle.trim() || connectedHandle;
     if (!targetHandle) {
@@ -102,6 +118,7 @@ export default function CodeforcesTab() {
           setIsConnected(data.isConnected);
           setConnectedHandle(data.handle);
           if (data.isConnected && data.handle) {
+            setHandle(data.handle);
             // Auto-fetch data for connected users
             fetchCodeforcesData(data.handle);
           }
