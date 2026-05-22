@@ -150,16 +150,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             </span>
             <span className="relative z-[1]">{loadingText || children}</span>
           </>
-        ) : (
+        ) : icon ? (
           <>
-            {icon && iconPosition === "left" && (
+            {iconPosition === "left" && (
               <span className="relative z-[1] shrink-0">{icon}</span>
             )}
             <span className="relative z-[1]">{children}</span>
-            {icon && iconPosition === "right" && (
+            {iconPosition === "right" && (
               <span className="relative z-[1] shrink-0">{icon}</span>
             )}
           </>
+        ) : (
+          <span className="relative z-[1] inline-flex items-center justify-center gap-2 [&_svg]:shrink-0">
+            {children}
+          </span>
         )}
       </Comp>
     )

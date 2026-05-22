@@ -254,10 +254,10 @@ export default function ProfileTab() {
               <Button
                 onClick={generateAvatarOptions}
                 variant="outline"
-                className="flex items-center space-x-2"
+                className="justify-center"
+                icon={<Shuffle className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
-                <Shuffle className="w-4 h-4" />
-                <span>Shuffle Avatars</span>
+                Shuffle Avatars
               </Button>
             </div>
           </CardContent>

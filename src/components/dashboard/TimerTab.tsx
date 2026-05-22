@@ -120,20 +120,35 @@ export default function TimerTab() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+          <div className="flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center sm:gap-4">
             {!isRunning ? (
-              <Button onClick={handleStart} size="lg" disabled={minutes === 0 && seconds === 0} className="w-full sm:w-auto">
-                <Play className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handleStart}
+                size="lg"
+                disabled={minutes === 0 && seconds === 0}
+                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                icon={<Play className="h-4 w-4" aria-hidden="true" />}
+              >
                 Start
               </Button>
             ) : (
-              <Button onClick={handlePause} variant="secondary" size="lg" className="w-full sm:w-auto">
-                <Pause className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handlePause}
+                variant="secondary"
+                size="lg"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                icon={<Pause className="h-4 w-4" aria-hidden="true" />}
+              >
                 Pause
               </Button>
             )}
-            <Button onClick={handleReset} variant="outline" size="lg" className="w-full sm:w-auto">
-              <RotateCcw className="w-4 h-4 mr-2" />
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              size="lg"
+              className="w-full sm:min-w-[8.5rem] sm:w-auto"
+              icon={<RotateCcw className="h-4 w-4" aria-hidden="true" />}
+            >
               Reset
             </Button>
           </div>

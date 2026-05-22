@@ -219,19 +219,19 @@ export default function TracksheetTab() {
               <Button
                 onClick={exportToCSV}
                 variant="outline"
-                className="flex-1"
+                className="h-11 flex-1 justify-center sm:h-10"
                 disabled={filteredSessions.length === 0}
+                icon={<FileText className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
-                <FileText className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
               <Button
                 onClick={exportToExcel}
                 variant="outline"
-                className="flex-1"
+                className="h-11 flex-1 justify-center sm:h-10"
                 disabled={filteredSessions.length === 0}
+                icon={<FileSpreadsheet className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
                 Export Excel
               </Button>
             </div>

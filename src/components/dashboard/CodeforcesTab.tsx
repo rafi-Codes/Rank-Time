@@ -230,8 +230,9 @@ export default function CodeforcesTab() {
               <Button
                 onClick={disconnectCodeforces}
                 variant="destructive"
+                className="justify-center"
+                icon={<UserX className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
-                <UserX className="h-4 w-4 mr-2" />
                 Disconnect
               </Button>
             </div>

@@ -226,10 +226,12 @@ export default function StopwatchTab() {
               onClick={fetchRecentProblem}
               disabled={loadingProblems}
               variant="outline"
-              className="flex-1 text-sm"
+              className="h-11 w-full flex-1 justify-center text-sm sm:h-10"
+              icon={<Download className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              isLoading={loadingProblems}
+              loadingText="Loading..."
             >
-              <Download className="w-4 h-4 mr-2" />
-              {loadingProblems ? 'Loading...' : 'Fetch Recent Problem'}
+              Fetch Recent Problem
             </Button>
             {recentProblem && (
               <Button
@@ -290,20 +292,34 @@ export default function StopwatchTab() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+          <div className="flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center sm:gap-4">
             {!isRunning ? (
-              <Button onClick={handleStart} size="lg" className="w-full sm:w-auto">
-                <Play className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handleStart}
+                size="lg"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                icon={<Play className="h-4 w-4" aria-hidden="true" />}
+              >
                 Start
               </Button>
             ) : (
-              <Button onClick={handlePause} variant="secondary" size="lg" className="w-full sm:w-auto">
-                <Pause className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handlePause}
+                variant="secondary"
+                size="lg"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                icon={<Pause className="h-4 w-4" aria-hidden="true" />}
+              >
                 Pause
               </Button>
             )}
-            <Button onClick={handleReset} variant="outline" size="lg" className="w-full sm:w-auto">
-              <Square className="w-4 h-4 mr-2" />
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              size="lg"
+              className="w-full sm:min-w-[8.5rem] sm:w-auto"
+              icon={<Square className="h-4 w-4" aria-hidden="true" />}
+            >
               Reset
             </Button>
           </div>
@@ -320,8 +336,12 @@ export default function StopwatchTab() {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={handleLap} disabled={!isRunning} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button
+                onClick={handleLap}
+                disabled={!isRunning}
+                className="h-11 w-full justify-center sm:h-10 sm:w-auto"
+                icon={<Plus className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              >
                 Add Lap
               </Button>
             </div>

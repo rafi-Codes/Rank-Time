@@ -484,8 +484,14 @@ export default function RankBuddyTab() {
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               className="flex-1"
             />
-            <Button onClick={sendMessage} disabled={!currentQuestion.trim() || isTyping}>
-              <MessageSquare className="h-4 w-4" />
+            <Button
+              onClick={sendMessage}
+              disabled={!currentQuestion.trim() || isTyping}
+              size="icon"
+              className="shrink-0"
+              aria-label="Send message"
+            >
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </CardContent>
@@ -1183,42 +1189,30 @@ export default function RankBuddyTab() {
     </div>
   );
 
+  const rankBuddyViews = [
+    { id: 'chat' as const, label: 'Chat', icon: Bot },
+    { id: 'challenges' as const, label: 'Challenges', icon: Trophy },
+    { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
+    { id: 'replay' as const, label: 'Replay', icon: Calendar },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Button
-          variant={activeView === 'chat' ? 'default' : 'outline'}
-          onClick={() => setActiveView('chat')}
-          className="flex items-center space-x-2"
-        >
-          <Bot className="h-4 w-4" />
-          <span>Chat</span>
-        </Button>
-        <Button
-          variant={activeView === 'challenges' ? 'default' : 'outline'}
-          onClick={() => setActiveView('challenges')}
-          className="flex items-center space-x-2"
-        >
-          <Trophy className="h-4 w-4" />
-          <span>Challenges</span>
-        </Button>
-        <Button
-          variant={activeView === 'analytics' ? 'default' : 'outline'}
-          onClick={() => setActiveView('analytics')}
-          className="flex items-center space-x-2"
-        >
-          <BarChart3 className="h-4 w-4" />
-          <span>Analytics</span>
-        </Button>
-        <Button
-          variant={activeView === 'replay' ? 'default' : 'outline'}
-          onClick={() => setActiveView('replay')}
-          className="flex items-center space-x-2"
-        >
-          <Calendar className="h-4 w-4" />
-          <span>Replay</span>
-        </Button>
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {rankBuddyViews.map(({ id, label, icon: Icon }) => (
+          <Button
+            key={id}
+            type="button"
+            variant={activeView === id ? 'default' : 'outline'}
+            onClick={() => setActiveView(id)}
+            size="sm"
+            className="h-11 w-full min-w-0 justify-center gap-2 px-3 sm:h-10 sm:px-4"
+            icon={<Icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
+          >
+            <span className="truncate">{label}</span>
+          </Button>
+        ))}
       </div>
 
       {/* Content */}
