@@ -7,7 +7,7 @@ import Challenge from '@/models/Challenge';
 import Badge from '@/models/Badge';
 import Session from '@/models/Session';
 import User from '@/models/User';
-import { OpenRouter } from '@openrouter/sdk';
+import { callOpenRouterChat } from '@/lib/openRouterClient';
 
 export async function GET(request: NextRequest) {
   try {
@@ -123,10 +123,9 @@ async function generateAIImprovementPath(
       return fallbackResponse;
     }
 
-    // Initialize OpenRouter
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY is not set');
+    }
 
     // Prepare performance data for AI analysis
     const performanceData = {
@@ -209,7 +208,7 @@ Be specific, encouraging, and realistic. Tailor advice to their current level an
 `;
 
     // Call OpenRouter
-    const completion = await openRouter.chat.send({
+    const completion = await callOpenRouterChat({
       model: 'anthropic/claude-3-haiku',
       messages: [
         {
@@ -221,7 +220,10 @@ Be specific, encouraging, and realistic. Tailor advice to their current level an
       maxTokens: 2000
     });
 
-    const aiResponse = completion.choices[0]?.message?.content;
+    const aiResponse = completion.response;
+    if (completion.provider === 'fallback') {
+      console.warn('Improvement path AI used fallback provider');
+    }
     if (!aiResponse || typeof aiResponse !== 'string') {
       throw new Error('No valid response from AI');
     }

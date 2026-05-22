@@ -13,16 +13,26 @@ export async function POST(request: NextRequest) {
     }
 
     const { avatarUrl } = await request.json();
+    const normalizedAvatarUrl = typeof avatarUrl === 'string' ? avatarUrl.trim() : '';
 
-    if (!avatarUrl) {
+    if (!normalizedAvatarUrl) {
       return NextResponse.json({ message: 'Avatar URL is required' }, { status: 400 });
+    }
+
+    try {
+      const parsedUrl = new URL(normalizedAvatarUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol) || normalizedAvatarUrl.length > 2048) {
+        return NextResponse.json({ message: 'Valid avatar URL is required' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ message: 'Valid avatar URL is required' }, { status: 400 });
     }
 
     await dbConnect();
 
     const user = await User.findOneAndUpdate(
       { email: session.user.email },
-      { image: avatarUrl },
+      { image: normalizedAvatarUrl },
       { new: true }
     );
 

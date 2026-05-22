@@ -15,13 +15,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { handle } = await request.json();
-    if (!handle || typeof handle !== 'string') {
+    const normalizedHandle = typeof handle === 'string' ? handle.trim() : '';
+    if (!normalizedHandle || !/^[A-Za-z0-9_.-]{3,24}$/.test(normalizedHandle)) {
       return NextResponse.json({ error: 'Valid handle is required' }, { status: 400 });
     }
 
     // Validate handle with Codeforces API
     const userResponse = await fetch(
-      `https://codeforces.com/api/user.info?handles=${encodeURIComponent(handle)}`,
+      `https://codeforces.com/api/user.info?handles=${encodeURIComponent(normalizedHandle)}`,
       {
         headers: {
           'User-Agent': 'RankTime-App/1.0',
@@ -46,9 +47,11 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    const verifiedHandle = userData.result[0].handle;
+
     const user = await User.findOneAndUpdate(
       { email: session.user.email },
-      { codeforcesHandle: handle },
+      { codeforcesHandle: verifiedHandle },
       { new: true }
     );
 

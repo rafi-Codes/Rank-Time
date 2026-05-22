@@ -14,6 +14,7 @@ function msUntilNext(hour: number, minute = 0) {
 async function runDailyGeneration() {
   try {
     await connectDB();
+
     const users = await User.find({}).select('_id');
     for (const u of users) {
       try {
@@ -31,6 +32,7 @@ async function runDailyGeneration() {
 async function runWeeklyGeneration() {
   try {
     await connectDB();
+
     const users = await User.find({}).select('_id');
     for (const u of users) {
       try {

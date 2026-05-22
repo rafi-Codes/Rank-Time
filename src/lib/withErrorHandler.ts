@@ -1,63 +1,46 @@
-import { randomUUID } from 'crypto';
-import { NextRequest } from 'next/server';
-import { ZodError } from 'zod';
-import { errorResponse } from '@/lib/apiResponse';
-import { logger } from '@/lib/logger';
+import { NextResponse } from 'next/server';
+import { errorResponse } from './apiResponse';
+import { logger, createCorrelationId } from './logger';
 
-export class ApiError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public statusCode = 500,
-    public details?: unknown
-  ) {
-    super(message);
+function getCorrelationId() {
+  const possible = (globalThis as any)?.__requestCorrelationId;
+  return (
+    typeof possible === 'string' && possible.length > 0
+      ? possible
+      : createCorrelationId()
+  );
+}
+
+export async function withErrorHandler<T>(
+  handler: () => Promise<T>,
+  opts?: {
+    fallbackCode?: string;
+    fallbackMessage?: string;
+  }
+) {
+  try {
+    const result = await handler();
+    if (result instanceof Response) {
+      return result;
+    }
+    return NextResponse.json(result as any);
+  } catch (err) {
+    const correlationId = getCorrelationId();
+    const errorMessage = err instanceof Error ? err.message : String(err);
+
+    logger.error('API handler error', {
+      correlationId,
+      error: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+
+    const code = opts?.fallbackCode ?? 'INTERNAL_ERROR';
+    const message = opts?.fallbackMessage ?? 'Internal server error';
+
+    return NextResponse.json(
+      errorResponse(code, message, 500),
+      { status: 500 }
+    );
   }
 }
 
-type RouteContext = {
-  correlationId: string;
-};
-
-type Handler = (request: NextRequest, context: RouteContext) => Promise<Response>;
-
-export function withErrorHandler(handler: Handler) {
-  return async (request: NextRequest) => {
-    const correlationId = randomUUID();
-
-    try {
-      const response = await handler(request, { correlationId });
-      response.headers.set('x-correlation-id', correlationId);
-      return response;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        logger.warn('API request failed', {
-          correlationId,
-          code: error.code,
-          statusCode: error.statusCode,
-          details: error.details,
-        });
-        return errorResponse(error.code, error.message, error.statusCode, {
-          ...((error.details && typeof error.details === 'object') ? error.details : {}),
-          correlationId,
-        });
-      }
-
-      if (error instanceof ZodError) {
-        logger.warn('API validation failed', {
-          correlationId,
-          details: error.flatten(),
-        });
-        return errorResponse('VALIDATION_ERROR', 'Invalid request', 400, {
-          fields: error.flatten().fieldErrors,
-          correlationId,
-        });
-      }
-
-      logger.error('Unhandled API error', { correlationId, error });
-      return errorResponse('INTERNAL_SERVER_ERROR', 'Internal server error', 500, {
-        correlationId,
-      });
-    }
-  };
-}

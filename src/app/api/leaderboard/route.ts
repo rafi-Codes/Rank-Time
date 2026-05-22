@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import Session from '@/models/Session';
+import { redisGet, redisSet } from '@/lib/redisClient';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,88 +17,104 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sortBy = searchParams.get('sort') || 'totalScore';
     const timeRange = searchParams.get('timeRange') || 'all';
+    const cacheKey = `leaderboard:${sortBy}:${timeRange}`;
 
-    let users = await User.find({}).select(
-      'name email usertag totalScore currentStreak maxStreak rank league totalSessions'
-    );
+    const cached = await redisGet(cacheKey);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
 
-    // Calculate time-based stats if needed
+    const users = await User.find({})
+      .select('name email usertag totalScore currentStreak maxStreak rank league totalSessions')
+      .lean();
+
+    const startDate = new Date();
+    if (timeRange === 'month') {
+      startDate.setMonth(startDate.getMonth() - 1);
+    } else if (timeRange === 'week') {
+      startDate.setDate(startDate.getDate() - 7);
+    }
+
+    const sessionFilter: Record<string, unknown> = {};
     if (timeRange !== 'all') {
-      const startDate = new Date();
-      if (timeRange === 'month') {
-        startDate.setMonth(startDate.getMonth() - 1);
-      } else if (timeRange === 'week') {
-        startDate.setDate(startDate.getDate() - 7);
-      }
+      sessionFilter.createdAt = { $gte: startDate };
+    }
 
-      // Get sessions within time range for each user
-      for (const user of users) {
-        const sessions = await Session.find({
-          user: user._id,
-          createdAt: { $gte: startDate }
-        });
-
-        if (sortBy === 'totalScore') {
-          user.totalScore = sessions.reduce((sum, session) => sum + session.score, 0);
-        } else if (sortBy === 'averageScore') {
-          user.averageScore = sessions.length > 0
-            ? sessions.reduce((sum, session) => sum + session.score, 0) / sessions.length
-            : 0;
-        } else if (sortBy === 'totalSessions') {
-          user.totalSessions = sessions.length;
+    const sessionStats = await Session.aggregate([
+      { $match: sessionFilter },
+      {
+        $group: {
+          _id: '$user',
+          totalScore: { $sum: '$score' },
+          averageScore: { $avg: '$score' },
+          totalSessions: { $sum: 1 }
         }
       }
-    }
+    ]);
 
-    // Calculate average score for all users
-    for (const user of users) {
-      if (!user.averageScore) {
-        const sessions = await Session.find({ user: user._id });
-        user.averageScore = sessions.length > 0
-          ? sessions.reduce((sum, session) => sum + session.score, 0) / sessions.length
-          : 0;
-      }
-    }
+    const statsByUser = sessionStats.reduce<Record<string, { totalScore: number; averageScore: number; totalSessions: number }>>((acc, stat) => {
+      acc[String(stat._id)] = {
+        totalScore: stat.totalScore ?? 0,
+        averageScore: stat.averageScore ?? 0,
+        totalSessions: stat.totalSessions ?? 0,
+      };
+      return acc;
+    }, {});
 
-    // Sort users based on the selected criteria
-    users.sort((a, b) => {
-      let aValue, bValue;
+    const results = users.map((user) => {
+      const stats = statsByUser[String(user._id)] ?? {
+        totalScore: 0,
+        averageScore: 0,
+        totalSessions: 0,
+      };
 
-      switch (sortBy) {
-        case 'totalScore':
-          aValue = a.totalScore;
-          bValue = b.totalScore;
-          break;
-        case 'currentStreak':
-          aValue = a.currentStreak;
-          bValue = b.currentStreak;
-          break;
-        case 'maxStreak':
-          aValue = a.maxStreak;
-          bValue = b.maxStreak;
-          break;
-        case 'averageScore':
-          aValue = a.averageScore;
-          bValue = b.averageScore;
-          break;
-        case 'totalSessions':
-          aValue = a.totalSessions;
-          bValue = b.totalSessions;
-          break;
-        default:
-          aValue = a.totalScore;
-          bValue = b.totalScore;
-      }
-
-      return bValue - aValue; // Descending order
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        usertag: user.usertag,
+        league: user.league,
+        currentStreak: user.currentStreak ?? 0,
+        maxStreak: user.maxStreak ?? 0,
+        rank: user.rank ?? 0,
+        totalScore: timeRange === 'all' ? user.totalScore ?? stats.totalScore : stats.totalScore,
+        averageScore: stats.averageScore ?? 0,
+        totalSessions: stats.totalSessions ?? 0,
+      };
     });
 
-    // Update ranks
-    users.forEach((user, index) => {
-      user.rank = index + 1;
+    results.sort((a, b) => {
+      const aValue = sortBy === 'currentStreak'
+        ? a.currentStreak
+        : sortBy === 'maxStreak'
+        ? a.maxStreak
+        : sortBy === 'averageScore'
+        ? a.averageScore
+        : sortBy === 'totalSessions'
+        ? a.totalSessions
+        : a.totalScore;
+
+      const bValue = sortBy === 'currentStreak'
+        ? b.currentStreak
+        : sortBy === 'maxStreak'
+        ? b.maxStreak
+        : sortBy === 'averageScore'
+        ? b.averageScore
+        : sortBy === 'totalSessions'
+        ? b.totalSessions
+        : b.totalScore;
+
+      return bValue - aValue;
     });
 
-    return NextResponse.json(users);
+    const rankedResults = results.map((user, index) => ({
+      ...user,
+      rank: index + 1,
+    }));
+
+    await redisSet(cacheKey, JSON.stringify(rankedResults), CACHE_TTL_SECONDS);
+
+    return NextResponse.json(rankedResults);
 
   } catch (error) {
     console.error('Error fetching leaderboard:', error);

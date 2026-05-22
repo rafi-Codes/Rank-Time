@@ -1,119 +1,174 @@
-import RateLimit from '@/models/RateLimit';
-import { logger } from '@/lib/logger';
+/*
+ * OTP brute-force / rate limiting helpers.
+ *
+ * This implementation uses MongoDB as a fallback store. In production, swap to Redis
+ * for better TTL and eviction behavior.
+ */
 
-const OTP_FAILURE_LIMIT = 5;
-const OTP_LOCK_MS = 15 * 60 * 1000;
-const PASSWORD_RESET_REQUEST_LIMIT = 5;
-const PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000;
-const FAILURE_WINDOW_MS = 60 * 60 * 1000;
-const BACKOFF_MS = [0, 30_000, 120_000, 300_000, 900_000];
+import { NextRequest } from 'next/server';
+import mongoose from 'mongoose';
+import connectDB from './db';
 
-function normalizeKey(value: string) {
-  return value.trim().toLowerCase();
+type OtpAttemptContext = {
+  email: string;
+  ip: string;
+  purpose: 'reset' | 'verify' | string;
+};
+
+const DEFAULTS = {
+  maxOtpRequestsPerHour: 5,
+  lockAfterFailedAttempts: 5,
+  lockMinutes: 15,
+  backoffMs: [0, 30_000, 120_000, 300_000, 900_000],
+};
+
+function safeIp(ip: string | undefined | null) {
+  return (ip || '').toString().trim() || 'unknown_ip';
 }
 
-function requestKey(email: string, ip: string) {
-  return `${normalizeKey(email)}:${ip || 'unknown'}`;
+function getHourKey(now: Date) {
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(now.getUTCDate()).padStart(2, '0');
+  const h = String(now.getUTCHours()).padStart(2, '0');
+  return `${y}-${m}-${d}T${h}:00Z`;
 }
 
-export async function checkOtpAttempts(email: string, ip: string) {
+function getBackoffMs(failedAttempts: number) {
+  return DEFAULTS.backoffMs[Math.min(Math.max(failedAttempts, 0), DEFAULTS.backoffMs.length - 1)];
+}
+
+async function getAttemptsDocument(ctx: OtpAttemptContext) {
+  const conn = await connectDB();
+  const db = conn.connection.db;
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  const coll = db.collection('otpAttemptLocks');
+
   const now = new Date();
-  const checks = await RateLimit.find({
-    key: { $in: [normalizeKey(email), requestKey(email, ip)] },
-    scope: 'otp_verify',
-    resetAt: { $gt: now },
+  const hourBucket = getHourKey(now);
+
+  await coll.updateOne(
+    { email: ctx.email, ip: ctx.ip, purpose: ctx.purpose },
+    {
+      $setOnInsert: {
+        createdAt: now,
+        failedAttempts: 0,
+        lockedUntil: null,
+        requestHour: hourBucket,
+        requestCount: 0,
+        lastAttemptAt: now,
+      },
+      $set: { updatedAt: now },
+    },
+    { upsert: true }
+  );
+
+  return coll.findOne({ email: ctx.email, ip: ctx.ip, purpose: ctx.purpose });
+}
+
+async function updateAttemptsDocument(filter: Record<string, unknown>, update: Record<string, unknown>) {
+  const conn = await connectDB();
+  const db = conn.connection.db;
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  const coll = db.collection('otpAttemptLocks');
+  await coll.updateOne(filter, update, { upsert: true });
+}
+
+export async function checkPasswordResetAttempts(request: NextRequest, ctx: OtpAttemptContext) {
+  const ip = safeIp(request.headers.get('x-forwarded-for'));
+  const now = new Date();
+  const hourBucket = getHourKey(now);
+  const filter = { email: ctx.email, ip, purpose: ctx.purpose };
+
+  const doc = await getAttemptsDocument({ ...ctx, ip });
+  if (!doc) {
+    return { ok: true } as const;
+  }
+
+  const lockedUntil = doc.lockedUntil ? new Date(doc.lockedUntil) : null;
+  if (lockedUntil && lockedUntil.getTime() > now.getTime()) {
+    return { ok: false, retryAfterMs: lockedUntil.getTime() - now.getTime() } as const;
+  }
+
+  const requestCount = doc.requestHour === hourBucket ? doc.requestCount ?? 0 : 0;
+  if (requestCount >= DEFAULTS.maxOtpRequestsPerHour) {
+    const bucketEnd = new Date(`${hourBucket}`);
+    bucketEnd.setUTCHours(bucketEnd.getUTCHours() + 1);
+    return { ok: false, retryAfterMs: bucketEnd.getTime() - now.getTime() } as const;
+  }
+
+  const update: Record<string, unknown> = {
+    $set: { requestHour: hourBucket, updatedAt: now },
+  };
+
+  if (doc.requestHour === hourBucket) {
+    (update as any).$inc = { requestCount: 1 };
+  } else {
+    (update as any).$set = { ...(update as any).$set, requestCount: 1 };
+  }
+
+  await updateAttemptsDocument(filter, update);
+
+  return { ok: true } as const;
+}
+
+export async function checkOtpAttempts(request: NextRequest, ctx: OtpAttemptContext) {
+  const ip = safeIp(request.headers.get('x-forwarded-for'));
+  const now = new Date();
+
+  const doc = await getAttemptsDocument({ ...ctx, ip });
+  if (!doc) {
+    return { ok: true } as const;
+  }
+
+  const lockedUntil = doc.lockedUntil ? new Date(doc.lockedUntil) : null;
+  if (lockedUntil && lockedUntil.getTime() > now.getTime()) {
+    return { ok: false, retryAfterMs: lockedUntil.getTime() - now.getTime() } as const;
+  }
+
+  const failedAttempts = doc.failedAttempts ?? 0;
+  const backoffMs = getBackoffMs(failedAttempts);
+  const lastAttemptAt = doc.lastAttemptAt ? new Date(doc.lastAttemptAt) : null;
+
+  if (lastAttemptAt && lastAttemptAt.getTime() + backoffMs > now.getTime()) {
+    return { ok: false, retryAfterMs: lastAttemptAt.getTime() + backoffMs - now.getTime() } as const;
+  }
+
+  return { ok: true } as const;
+}
+
+export async function recordFailedOtpAttempt(email: string, ip: string, purpose: string) {
+  const now = new Date();
+  const filter = { email, ip, purpose };
+
+  await updateAttemptsDocument(filter, {
+    $inc: { failedAttempts: 1 },
+    $set: { updatedAt: now, lastAttemptAt: now },
   });
 
-  const locked = checks.find((record) => record.lockedUntil && record.lockedUntil > now);
-  if (locked) {
-    return {
-      allowed: false,
-      reason: 'locked',
-      retryAfterSeconds: Math.ceil((locked.lockedUntil!.getTime() - now.getTime()) / 1000),
-    };
-  }
+  const doc = await getAttemptsDocument({ email, ip, purpose });
+  const failedAttempts = doc?.failedAttempts ?? 0;
 
-  const delayed = checks.find((record) => record.nextAllowedAt && record.nextAllowedAt > now);
-  if (delayed) {
-    return {
-      allowed: false,
-      reason: 'backoff',
-      retryAfterSeconds: Math.ceil((delayed.nextAllowedAt!.getTime() - now.getTime()) / 1000),
-    };
+  if (failedAttempts >= DEFAULTS.lockAfterFailedAttempts) {
+    const lockedUntil = new Date(now.getTime() + DEFAULTS.lockMinutes * 60 * 1000);
+    await updateAttemptsDocument(filter, {
+      $set: { lockedUntil, updatedAt: now },
+    });
   }
-
-  return { allowed: true };
 }
 
-export async function recordOtpFailure(email: string, ip: string) {
-  const now = new Date();
-  const resetAt = new Date(now.getTime() + FAILURE_WINDOW_MS);
-  const keys = [normalizeKey(email), requestKey(email, ip)];
-
-  for (const key of keys) {
-    const record = await RateLimit.findOneAndUpdate(
-      { key, scope: 'otp_verify' },
-      {
-        $setOnInsert: { resetAt },
-        $inc: { attempts: 1 },
-      },
-      { upsert: true, new: true }
-    );
-
-    if (record.resetAt <= now) {
-      record.attempts = 1;
-      record.resetAt = resetAt;
-    }
-
-    if (record.attempts >= OTP_FAILURE_LIMIT) {
-      record.lockedUntil = new Date(now.getTime() + OTP_LOCK_MS);
-      record.nextAllowedAt = record.lockedUntil;
-    } else {
-      const delay = BACKOFF_MS[Math.min(record.attempts - 1, BACKOFF_MS.length - 1)];
-      record.nextAllowedAt = new Date(now.getTime() + delay);
-    }
-
-    await record.save();
+export async function clearOtpAttemptRecord(email: string, ip: string, purpose: string) {
+  const conn = await connectDB();
+  const db = conn.connection.db;
+  if (!db) {
+    throw new Error('Database connection not available');
   }
+  const coll = db.collection('otpAttemptLocks');
 
-  logger.warn('OTP verification failed', { email: normalizeKey(email), ip });
+  await coll.deleteOne({ email, ip, purpose });
 }
 
-export async function clearOtpAttempts(email: string, ip: string) {
-  await RateLimit.deleteMany({
-    key: { $in: [normalizeKey(email), requestKey(email, ip)] },
-    scope: 'otp_verify',
-  });
-}
-
-export async function checkPasswordResetAttempts(email: string, ip: string) {
-  const now = new Date();
-  const resetAt = new Date(now.getTime() + PASSWORD_RESET_WINDOW_MS);
-  const keys = [normalizeKey(email), requestKey(email, ip)];
-
-  for (const key of keys) {
-    const record = await RateLimit.findOneAndUpdate(
-      { key, scope: 'password_reset_request' },
-      {
-        $setOnInsert: { resetAt },
-        $inc: { attempts: 1 },
-      },
-      { upsert: true, new: true }
-    );
-
-    if (record.resetAt <= now) {
-      record.attempts = 1;
-      record.resetAt = resetAt;
-      await record.save();
-    }
-
-    if (record.attempts > PASSWORD_RESET_REQUEST_LIMIT) {
-      return {
-        allowed: false,
-        retryAfterSeconds: Math.ceil((record.resetAt.getTime() - now.getTime()) / 1000),
-      };
-    }
-  }
-
-  return { allowed: true };
-}

@@ -7,9 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Bot,
   Trophy,
@@ -135,6 +133,31 @@ interface ImprovementData {
   };
 }
 
+interface LearningWeek {
+  week: number;
+  focus: string;
+  goals: string[];
+  practice: string[];
+  resources?: string[];
+}
+
+interface LearningCurriculum {
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  curriculum: LearningWeek[];
+}
+
+interface EmailQueueStatus {
+  healthy: boolean;
+  message: string;
+  activeJobs?: number;
+  waitingJobs?: number;
+  completedJobs?: number;
+  failedJobs?: number;
+  delayedJobs?: number;
+}
+
 export default function RankBuddyTab() {
   const { data: session } = useSession();
   const [activeView, setActiveView] = useState<'chat' | 'challenges' | 'analytics' | 'replay'>('chat');
@@ -144,6 +167,9 @@ export default function RankBuddyTab() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [badges, setBadges] = useState<BadgeData[]>([]);
   const [improvementData, setImprovementData] = useState<ImprovementData | null>(null);
+  const [curriculumData, setCurriculumData] = useState<LearningCurriculum | null>(null);
+  const [emailQueueStatus, setEmailQueueStatus] = useState<EmailQueueStatus | null>(null);
+  const [emailQueueLoading, setEmailQueueLoading] = useState(true);
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [heatmapStats, setHeatmapStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +177,34 @@ export default function RankBuddyTab() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [replayLoading, setReplayLoading] = useState(false);
+
+  async function loadEmailQueueStatus() {
+    try {
+      setEmailQueueLoading(true);
+      const response = await fetch('/api/health/email-queue');
+      if (response.ok) {
+        const result = await response.json();
+        const payload = result?.data || result;
+        setEmailQueueStatus({
+          healthy: payload.healthy ?? true,
+          message: payload.message || 'Email queue is healthy',
+          activeJobs: payload.activeJobs,
+          waitingJobs: payload.waitingJobs,
+          completedJobs: payload.completedJobs,
+          failedJobs: payload.failedJobs,
+          delayedJobs: payload.delayedJobs,
+        });
+      } else {
+        const errorBody = await response.json().catch(() => null);
+        setEmailQueueStatus({ healthy: false, message: errorBody?.message || 'Unable to load email queue status' });
+      }
+    } catch (error) {
+      console.error('Error loading email queue status:', error);
+      setEmailQueueStatus({ healthy: false, message: 'Unable to connect to email queue status endpoint' });
+    } finally {
+      setEmailQueueLoading(false);
+    }
+  }
 
   const loadUserData = useCallback(async () => {
     try {
@@ -170,6 +224,22 @@ export default function RankBuddyTab() {
         const improvementResult = await improvementResponse.json();
         setImprovementData(improvementResult);
       }
+
+      // Load learning curriculum (Phase 3)
+      try {
+        const curriculumResponse = await fetch('/api/user/learning-curriculum');
+        if (curriculumResponse.ok) {
+          const curriculumResult = await curriculumResponse.json();
+          // API may return wrapped payload via successResponse
+          const payload = curriculumResult?.data?.curriculum || curriculumResult?.curriculum || curriculumResult?.data || curriculumResult;
+          setCurriculumData(payload || null);
+        }
+      } catch (err) {
+        console.debug('Curriculum load failed', err);
+      }
+
+      // Load email queue status and monitoring info
+      await loadEmailQueueStatus();
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
@@ -342,7 +412,7 @@ export default function RankBuddyTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Bot className="h-6 w-6 text-blue-600" />
+            <Bot className="h-6 w-6 text-primary" />
             <span>Chat with Rank Buddy</span>
           </CardTitle>
           <CardDescription>
@@ -350,23 +420,24 @@ export default function RankBuddyTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-96 overflow-y-auto border rounded-lg p-4 space-y-4 mb-4">
+          <div className="mb-4 h-96 space-y-4 overflow-y-auto rounded-lg border border-border bg-muted/30 p-4">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                <div className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
                   message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border bg-card text-card-foreground shadow-sm'
                 }`}>
-                  <p className="text-sm">{message.content}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs opacity-70">
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className={`text-xs ${message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </p>
                     {message.role === 'assistant' && message.provider && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        message.provider === 'replicate' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      <span className={`rounded px-1.5 py-0.5 text-xs ${
+                        message.provider === 'replicate'
+                          ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-muted text-muted-foreground'
                       }`}>
                         {message.provider === 'replicate' ? 'Replicate' :
                          message.fallback ? 'Basic' : 'AI'}
@@ -378,11 +449,11 @@ export default function RankBuddyTab() {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
+                <div className="rounded-lg border border-border bg-card px-4 py-2">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]"></div>
                   </div>
                 </div>
               </div>
@@ -743,6 +814,109 @@ export default function RankBuddyTab() {
                 <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <p className="text-xl font-bold">{improvementData.insights.consistency}%</p>
                   <p className="text-xs text-gray-500">Consistency</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Flame className="h-6 w-6 text-orange-600" />
+            <span>Email Queue Status</span>
+          </CardTitle>
+          <CardDescription>
+            Monitor email retry processing and queue health.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {emailQueueLoading ? (
+            <div className="h-24 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-2"></div>
+                <p className="text-gray-500">Checking queue status...</p>
+              </div>
+            </div>
+          ) : emailQueueStatus ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-lg border p-4 bg-white/80 dark:bg-slate-950/80">
+                <p className="text-sm text-gray-500">Status</p>
+                <p className={`font-semibold ${emailQueueStatus.healthy ? 'text-green-600' : 'text-red-600'}`}>
+                  {emailQueueStatus.healthy ? 'Healthy' : 'Issue detected'}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">{emailQueueStatus.message}</p>
+              </div>
+              <div className="rounded-lg border p-4 bg-white/80 dark:bg-slate-950/80">
+                <p className="text-sm text-gray-500">Queue Metrics</p>
+                <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-700 dark:text-gray-300">
+                  <div>Active: {emailQueueStatus.activeJobs ?? 0}</div>
+                  <div>Waiting: {emailQueueStatus.waitingJobs ?? 0}</div>
+                  <div>Completed: {emailQueueStatus.completedJobs ?? 0}</div>
+                  <div>Failed: {emailQueueStatus.failedJobs ?? 0}</div>
+                  <div>Delayed: {emailQueueStatus.delayedJobs ?? 0}</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">Email queue information is unavailable.</div>
+          )}
+        </CardContent>
+      </Card>
+      {curriculumData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Lightbulb className="h-6 w-6 text-yellow-600" />
+              <span>Learning Curriculum</span>
+            </CardTitle>
+            <CardDescription>
+              A personalized 4-week curriculum generated by Rank Buddy
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <h4 className="font-medium text-green-700 mb-2">Strengths</h4>
+                  <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                    {curriculumData.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <h4 className="font-medium text-red-700 mb-2">Weaknesses</h4>
+                  <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                    {curriculumData.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium">Weekly Plan</h4>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {curriculumData.curriculum.map((week) => (
+                    <div key={week.week} className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-semibold">Week {week.week}: {week.focus}</h5>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Goals:</p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-2">
+                        {week.goals.map((g, i) => <li key={i}>{g}</li>)}
+                      </ul>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Practice:</p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                        {week.practice.map((p, i) => <li key={i}>{p}</li>)}
+                      </ul>
+                      {week.resources && week.resources.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500">Resources:</p>
+                          <ul className="text-xs text-gray-600 list-disc list-inside">
+                            {week.resources.map((r, i) => <li key={i}>{r}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

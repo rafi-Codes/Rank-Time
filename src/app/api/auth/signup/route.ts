@@ -1,144 +1,151 @@
-import { NextRequest } from 'next/server';
+// src/app/api/auth/signup/route.ts
+import { NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth';
 import connectDB from '@/lib/db';
-import EmailOtp from '@/models/EmailOtp';
-import User from '@/models/User';
 import { generateOtp, sendEmail } from '@/lib/email';
 import { generateUserTag, normalizeEmail } from '@/lib/utils';
-import { successResponse } from '@/lib/apiResponse';
-import { logger } from '@/lib/logger';
-import { checkPasswordResetAttempts } from '@/lib/rateLimiters';
-import { sanitizeText } from '@/lib/validation';
-import { ApiError, withErrorHandler } from '@/lib/withErrorHandler';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { successResponse, errorResponse } from '@/lib/apiResponse';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-function getClientIp(request: NextRequest) {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-}
+export async function POST(request: Request) {
+  return withErrorHandler(async () => {
+    const body = await request.json();
+    const { name, password, resend } = body;
+    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
-  const body = await request.json();
-  const { password, resend } = body;
-  const name = typeof body.name === 'string' ? sanitizeText(body.name) : '';
-  const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-  const ip = getClientIp(request);
+    if (resend && email) {
+      const conn = await connectDB();
+      const db = conn.connection.db;
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
 
-  await connectDB();
-
-  // Handle resend OTP case
-  if (resend && email) {
-    const rateLimit = await checkPasswordResetAttempts(email, ip);
-    if (!rateLimit.allowed) {
-      throw new ApiError('RATE_LIMITED', 'Too many OTP requests. Please try again later.', 429, {
-        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      const otpRecord = await db.collection('emailOtps').findOne({
+        email,
+        registrationData: { $exists: true },
       });
+
+      if (!otpRecord) {
+        return NextResponse.json(
+          errorResponse('PENDING_SIGNUP_NOT_FOUND', 'No pending registration found for this email', 404),
+          { status: 404 }
+        );
+      }
+
+      await db.collection('emailOtps').deleteMany({ email });
+
+      const otp = generateOtp(4);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
+
+      await db.collection('emailOtps').insertOne({
+        email,
+        otp,
+        expiresAt,
+        createdAt: new Date(),
+        registrationData: otpRecord.registrationData,
+        purpose: 'verify',
+      });
+
+      try {
+        await sendEmail(
+          email,
+          'Your RankTime verification code (resent)',
+          `Your new verification code is: ${otp}. It expires in 10 minutes.`,
+          `<p>Your new verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`
+        );
+      } catch (err) {
+        console.error('Failed to send OTP email:', err);
+        await db.collection('emailOtps').deleteMany({ email });
+        return NextResponse.json(
+          errorResponse('EMAIL_SEND_FAILED', 'Unable to send verification code right now. Please try again later.', 503),
+          { status: 503 }
+        );
+      }
+
+      return NextResponse.json(
+        successResponse({}, 'OTP resent successfully', 200),
+        { status: 200 }
+      );
     }
 
-    const otpRecord = await EmailOtp.findOne({
-      email,
-      registrationData: { $exists: true }
-    });
-
-    if (!otpRecord) {
-      throw new ApiError('PENDING_REGISTRATION_NOT_FOUND', 'No pending registration found for this email', 404);
+    if (!name || !email || !email.includes('@') || !password || password.trim().length < 7) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Invalid input - name, valid email, and password (min 7 characters) are required.', 422),
+        { status: 422 }
+      );
     }
 
-    await EmailOtp.deleteMany({ email });
+    const conn = await connectDB();
+    const db = conn.connection.db;
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
+
+    const existingUser = await db.collection('users').findOne({ email });
+    if (existingUser) {
+      return NextResponse.json(
+        errorResponse('USER_EXISTS', 'User already exists', 422),
+        { status: 422 }
+      );
+    }
+
+    const hashedPassword = await hashPassword(password);
+    let usertag;
+    let attempts = 0;
+    do {
+      usertag = generateUserTag();
+      attempts++;
+      if (attempts > 10) {
+        return NextResponse.json(
+          errorResponse('USERTAG_GENERATION_FAILED', 'Failed to generate unique usertag. Please try again.', 500),
+          { status: 500 }
+        );
+      }
+    } while (await db.collection('users').findOne({ usertag }));
 
     const otp = generateOtp(4);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
 
-    await EmailOtp.create({
+    await db.collection('emailOtps').deleteMany({ email });
+    await db.collection('emailOtps').insertOne({
       email,
       otp,
       expiresAt,
-      purpose: 'registration',
-      registrationData: otpRecord.registrationData,
+      createdAt: new Date(),
+      registrationData: {
+        name,
+        email,
+        password: hashedPassword,
+        usertag,
+      },
+      purpose: 'verify',
     });
-
-    const subject = 'Your RankTime verification code (resent)';
-    const text = `Your new verification code is: ${otp}. It expires in 10 minutes.`;
-    const html = `<p>Your new verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
 
     try {
-      await sendEmail(email, subject, text, html);
-      logger.info('Registration OTP resent', { email, ip });
+      await sendEmail(
+        email,
+        'Your RankTime verification code',
+        `Your verification code is: ${otp}. It expires in 10 minutes.`,
+        `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`
+      );
     } catch (err) {
-      logger.error('Failed to send OTP email', { email, ip, error: err });
-      await EmailOtp.deleteMany({ email });
-      throw new ApiError('EMAIL_DELIVERY_FAILED', 'Unable to send verification code right now. Please try again later.', 503);
+      console.error('Failed to send OTP email:', err);
+      await db.collection('emailOtps').deleteMany({ email });
+      return NextResponse.json(
+        errorResponse('EMAIL_SEND_FAILED', 'Unable to send verification code right now. Please try again later.', 503),
+        { status: 503 }
+      );
     }
 
-    return successResponse({ message: 'OTP resent successfully' }, 'OTP resent successfully');
-  }
-
-  if (!name || !email || !email.includes('@') || typeof password !== 'string' || password.trim().length < 7) {
-    throw new ApiError(
-      'INVALID_INPUT',
-      'Invalid input - name, valid email, and password (min 7 characters) are required.',
-      422
+    return NextResponse.json(
+      successResponse({}, 'OTP sent to email for verification', 200),
+      { status: 200 }
     );
-  }
-
-  const rateLimit = await checkPasswordResetAttempts(email, ip);
-  if (!rateLimit.allowed) {
-    throw new ApiError('RATE_LIMITED', 'Too many OTP requests. Please try again later.', 429, {
-      retryAfterSeconds: rateLimit.retryAfterSeconds,
-    });
-  }
-
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new ApiError('USER_EXISTS', 'User exists already!', 422);
-  }
-
-  const hashedPassword = await hashPassword(password);
-
-  let usertag;
-  let attempts = 0;
-  do {
-    usertag = generateUserTag();
-    attempts++;
-    if (attempts > 10) {
-      throw new ApiError('USERTAG_GENERATION_FAILED', 'Failed to generate unique usertag. Please try again.', 500);
-    }
-  } while (await User.exists({ usertag }));
-
-  const otp = generateOtp(4);
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
-
-  await EmailOtp.deleteMany({ email });
-
-  await EmailOtp.create({
-    email,
-    otp,
-    expiresAt,
-    purpose: 'registration',
-    registrationData: {
-      name,
-      email,
-      password: hashedPassword,
-      usertag,
-    },
+  }, {
+    fallbackCode: 'SIGNUP_FAILED',
+    fallbackMessage: 'Unable to create account',
   });
-
-  const subject = 'Your RankTime verification code';
-  const text = `Your verification code is: ${otp}. It expires in 10 minutes.`;
-  const html = `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`;
-
-  try {
-    await sendEmail(email, subject, text, html);
-    logger.info('Registration OTP sent', { email, ip });
-  } catch (err) {
-    logger.error('Failed to send OTP email', { email, ip, error: err });
-    await EmailOtp.deleteMany({ email });
-    throw new ApiError('EMAIL_DELIVERY_FAILED', 'Unable to send verification code right now. Please try again later.', 503);
-  }
-
-  return successResponse(
-    { message: 'OTP sent to email for verification' },
-    'OTP sent to email for verification'
-  );
-});
+}

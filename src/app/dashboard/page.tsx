@@ -18,6 +18,7 @@ import LeaderboardTab from '@/components/dashboard/LeaderboardTab';
 import CodeforcesTab from '@/components/dashboard/CodeforcesTab';
 import SocialTab from '@/components/dashboard/SocialTab';
 import RankBuddyTab from '@/components/dashboard/RankBuddyTab';
+import { BrandLogo } from '@/components/brand-logo';
 import { ModeToggle } from '@/components/mode-toggle';
 import { LogOut, Menu } from 'lucide-react';
 
@@ -165,8 +166,8 @@ export default function Dashboard() {
       <nav className="glass-panel sticky top-0 z-40 border-x-0 border-t-0 rounded-none">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-1 sm:space-x-2 cursor-pointer min-w-0 flex-1" onClick={() => setActiveTab('stopwatch')}>
-              <img src="/logo.svg" alt="RankTime Logo" className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />
+            <div className="flex min-w-0 flex-1 cursor-pointer items-center space-x-1 sm:space-x-2" onClick={() => setActiveTab('stopwatch')}>
+              <BrandLogo className="h-6 w-6 sm:h-8 sm:w-8" />
               <h1 className="brand-gradient truncate text-sm font-bold sm:text-lg lg:text-xl">RankTime</h1>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
@@ -230,10 +231,8 @@ export default function Dashboard() {
             </TabsList>
 
             {/* Controls section - right aligned on mobile */}
-            <div className="flex items-center justify-end space-x-1 sm:space-x-2 order-1 sm:order-2">
-              <div>
-                <ModeToggle />
-              </div>
+            <div className="order-1 flex shrink-0 items-center justify-end space-x-1 sm:order-2 sm:space-x-2">
+              <ModeToggle />
               <div>
                 <MoreMenu
                   onSelect={(val: string) => {

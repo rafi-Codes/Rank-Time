@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log('Generating weekly challenges for user:', user.email);
 
     // Generate weekly challenges for this user
-    await generateChallengesForUser(user._id, { daily: false, weekly: true });
+    await generateChallengesForUser(user._id, { daily: false, weekly: true, idempotencyKey: `weekly-${new Date().toISOString().slice(0, 10)}` });
 
     return NextResponse.json({
       success: true,

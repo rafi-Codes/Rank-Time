@@ -1,52 +1,48 @@
-import { NextResponse } from 'next/server';
-
-export type ApiError = {
-  code: string;
-  message: string;
-  details?: unknown;
+export type ApiSuccessResponse<TData = unknown> = {
+  success: true;
+  message?: string;
+  data: TData;
+  statusCode: number;
 };
 
-export type ApiResponse<T = unknown> =
-  | {
-      success: true;
-      message?: string;
-      data: T;
-      statusCode: number;
-    }
-  | {
-      success: false;
-      error: ApiError;
-      statusCode: number;
-    };
+export type ApiErrorResponse = {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+  statusCode: number;
+  message?: string;
+};
 
-export function successResponse<T>(data: T, message = 'OK', statusCode = 200) {
-  return NextResponse.json(
-    {
-      success: true,
-      message,
-      data,
-      statusCode,
-    },
-    { status: statusCode }
-  );
-}
+export const successResponse = <TData = unknown>(
+  data: TData,
+  message: string | undefined,
+  statusCode: number
+): ApiSuccessResponse<TData> => {
+  return {
+    success: true,
+    message,
+    data,
+    statusCode,
+  };
+};
 
-export function errorResponse(
+export const errorResponse = (
   code: string,
   message: string,
-  statusCode = 500,
+  statusCode: number,
   details?: unknown
-) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: {
-        code,
-        message,
-        ...(details === undefined ? {} : { details }),
-      },
-      statusCode,
+): ApiErrorResponse => {
+  return {
+    success: false,
+    error: {
+      code,
+      message,
+      ...(details !== undefined ? { details } : {}),
     },
-    { status: statusCode }
-  );
-}
+    statusCode,
+  };
+};
+

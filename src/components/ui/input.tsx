@@ -48,7 +48,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={helperText ? `${props.id}-helper` : undefined}
             className={cn(
               /* Base styles */
-              "flex h-input w-full rounded-lg border bg-background/80 px-4 py-2 text-base text-foreground",
+              "flex h-11 w-full rounded-[var(--radius-lg)] border bg-[var(--glass-standard-bg)] px-4 py-2 text-base text-foreground backdrop-blur-md",
               "ring-offset-background transition-all duration-200",
               "file:border-0 file:bg-transparent file:text-sm file:font-medium",
               "placeholder:text-muted-foreground",
@@ -62,9 +62,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               
               /* Border states */
               error
-                ? "border-danger focus-visible:border-danger focus-visible:ring-danger/30"
+                ? "border-[var(--color-danger)] focus-visible:border-[var(--color-danger)] focus-visible:ring-[rgba(239,68,68,0.18)]"
                 : success
-                ? "border-success focus-visible:border-success focus-visible:ring-success/30"
+                ? "border-[var(--color-success)] focus-visible:border-[var(--color-success)] focus-visible:ring-[rgba(16,185,129,0.18)]"
                 : "border-input focus-visible:border-primary focus-visible:bg-background focus-visible:ring-ring/30",
               
               /* Disabled state */
@@ -118,7 +118,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <div className="pointer-events-none absolute right-3 flex items-center">
               {error && (
                 <svg
-                  className="h-5 w-5 text-danger"
+                  className="h-5 w-5 text-[var(--color-danger)]"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
                   viewBox="0 0 24 24"
@@ -129,7 +129,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               )}
               {success && !error && (
                 <svg
-                  className="h-5 w-5 text-success"
+                  className="h-5 w-5 text-[var(--color-success)]"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
                   viewBox="0 0 24 24"
@@ -149,9 +149,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "mt-1.5 text-xs",
               error
-                ? "text-danger"
+                ? "text-[var(--color-danger)]"
                 : success
-                ? "text-success"
+                ? "text-[var(--color-success)]"
                 : "text-muted-foreground"
             )}
           >

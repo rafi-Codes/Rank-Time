@@ -1,4 +1,7 @@
+import crypto from 'crypto';
+import { enqueueEmail } from '@/lib/emailQueue';
 import Mailjet from 'node-mailjet';
+import { logger } from './logger';
 
 const mailjetApiKey = process.env.MAILJET_API_KEY;
 const mailjetSecretKey = process.env.MAILJET_SECRET_KEY;
@@ -24,7 +27,7 @@ function getMailjet() {
   return global._mailjetInstance;
 }
 
-export async function sendEmail(to: string, subject: string, text: string, html?: string) {
+async function sendEmailDirect(to: string, subject: string, text: string, html?: string) {
   const mj = getMailjet();
   if (!mj) {
     throw new Error('Mailjet API not configured');
@@ -53,14 +56,21 @@ export async function sendEmail(to: string, subject: string, text: string, html?
     const result = await request;
     return result.body;
   } catch (error) {
-    console.error('Mailjet API error:', error);
+    logger.error('Mailjet API error', error);
     throw new Error('Failed to send email via Mailjet');
+  }
+}
+
+export async function sendEmail(to: string, subject: string, text: string, html?: string) {
+  try {
+    return await enqueueEmail(to, subject, text, html);
+  } catch (error) {
+    logger.warn('Email queue unavailable, falling back to direct send', error);
+    return await sendEmailDirect(to, subject, text, html);
   }
 }
 
 export function generateOtp(length = 6) {
   const digits = '0123456789';
-  let otp = '';
-  for (let i = 0; i < length; i++) otp += digits[Math.floor(Math.random() * digits.length)];
-  return otp;
+  return Array.from({ length }, () => digits[crypto.randomInt(0, digits.length)]).join('');
 }

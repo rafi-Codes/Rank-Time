@@ -10,11 +10,11 @@
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "test-db": "node test-db.js",
-    "test-email": "node test-email.js",
-    "test-email-send": "node test-email-send.js",
-    "test-openrouter": "node test-openrouter.js",
-    "test-rankbuddy": "node test-rankbuddy.js"
+    "test": "npm run lint && npm run typecheck && npm run test:unit",
+    "test:unit": "jest --runInBand",
+    "test:coverage": "jest --coverage --runInBand",
+    "ci": "npm run test",
+    "test-health-ai": "node test/test-health-ai.js"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -26,9 +26,11 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "bcryptjs": "^3.0.3",
+    "bull": "^4.16.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",
+    "ioredis": "^5.10.1",
     "lucide-react": "^0.320.0",
     "mongodb": "^5.9.2",
     "mongoose": "^8.1.0",
@@ -46,17 +48,23 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^2.4.6",
+    "@types/bull": "^3.15.9",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.19.27",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
+    "@types/supertest": "^7.2.0",
     "autoprefixer": "^10.4.16",
     "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.3",
+    "jest": "^30.4.2",
     "postcss": "^8.4.32",
+    "supertest": "^7.2.2",
     "tailwindcss": "^3.4.0",
-      "typescript": "5.3.3"
+    "ts-jest": "^29.4.11",
+    "typescript": "5.3.3"
   },
   "devDependenciesMeta": {
     "cross-env": {

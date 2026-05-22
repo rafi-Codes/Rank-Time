@@ -13,6 +13,7 @@ export interface IChallenge extends Document {
   completed: boolean;
   completedAt?: Date;
   deadline: Date;
+  idempotencyKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ const ChallengeSchema = new Schema<IChallenge>(
     completed: { type: Boolean, default: false },
     completedAt: { type: Date },
     deadline: { type: Date, required: true },
+    idempotencyKey: { type: String, required: false, index: true },
   },
   { timestamps: true }
 );
@@ -40,5 +42,7 @@ ChallengeSchema.index({ userId: 1, type: 1, completed: 1 });
 ChallengeSchema.index({ userId: 1, deadline: 1 });
 ChallengeSchema.index({ userId: 1, type: 1, deadline: 1 }, { unique: true });
 ChallengeSchema.index({ deadline: 1 });
+ChallengeSchema.index({ userId: 1, type: 1, deadline: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $exists: false } } });
+ChallengeSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $exists: true } } });
 
 export default mongoose.models?.Challenge || mongoose.model<IChallenge>('Challenge', ChallengeSchema);

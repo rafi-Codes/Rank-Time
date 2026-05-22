@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
           <CardHeader className="space-y-3">
             <CardTitle className="text-2xl">Reset your password</CardTitle>
             <CardDescription>
-              Enter your account email and we'll send you a link to reset your password
+              Enter your account email and we&apos;ll send you a link to reset your password
             </CardDescription>
           </CardHeader>
 
@@ -147,7 +147,7 @@ export default function ForgotPasswordPage() {
                 </Link>
               </p>
               <p className="text-sm text-muted-foreground">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="/register"
                   className="font-semibold text-primary hover:text-primary/90 transition-colors"

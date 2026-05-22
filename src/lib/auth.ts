@@ -9,12 +9,14 @@ import { generateUserTag, normalizeEmail } from '@/lib/utils';
 import User from '@/models/User';
 
 async function generateUniqueUserTag() {
+
   let usertag = generateUserTag();
   let attempts = 0;
 
   while (await User.exists({ usertag })) {
     usertag = generateUserTag();
     attempts += 1;
+
 
     if (attempts > 10) {
       throw new Error('Failed to generate unique usertag');
@@ -25,6 +27,7 @@ async function generateUniqueUserTag() {
 }
 
 async function getOrCreateOAuthUser(profile: {
+
   email?: string | null;
   name?: string | null;
   image?: string | null;
@@ -34,8 +37,13 @@ async function getOrCreateOAuthUser(profile: {
   }
 
   const email = normalizeEmail(profile.email);
+
+  // Use Mongoose-backed collections for OAuth writes
   await connectDB();
+
   const existingUser = await User.findOne({ email });
+
+
 
   if (existingUser) {
     const updates: Record<string, unknown> = {
@@ -54,13 +62,19 @@ async function getOrCreateOAuthUser(profile: {
     await User.updateOne({ _id: existingUser._id }, { $set: updates });
 
     return {
-      ...existingUser.toObject(),
-      ...updates,
+      id: existingUser._id.toString(),
+      email: existingUser.email,
+      name: (updates.name as string) || existingUser.name,
+      image: (updates.image as string) || existingUser.image,
+      verified: true,
+      emailVerified: updates.emailVerified as Date,
+      usertag: (updates.usertag as string) || existingUser.usertag,
     };
   }
 
+
   const now = new Date();
-  return User.create({
+  const result = await User.create({
     name: profile.name || email.split('@')[0],
     email,
     image: profile.image || null,
@@ -77,7 +91,18 @@ async function getOrCreateOAuthUser(profile: {
     createdAt: now,
     updatedAt: now,
   });
+
+  return {
+    id: result._id.toString(),
+    email: result.email,
+    name: result.name,
+    image: result.image,
+    verified: result.verified,
+    emailVerified: result.emailVerified,
+    usertag: result.usertag,
+  };
 }
+
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
@@ -99,10 +124,8 @@ export const authOptions: NextAuthOptions = {
 
         try {
           await connectDB();
+          const user = await User.findOne({ email });
 
-          const user = await User.findOne({
-            email,
-          });
 
           if (!user) {
             throw new Error('Invalid email or password');
@@ -128,6 +151,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             image: user.image,
           };
+
         } catch (error) {
           console.error('Auth error:', error);
           throw error;
@@ -191,7 +215,7 @@ export const authOptions: NextAuthOptions = {
               throw new Error('Failed to load OAuth user');
             }
 
-            token.id = dbUser._id.toString();
+            token.id = dbUser.id;
           } else {
             token.id = user.id;
           }

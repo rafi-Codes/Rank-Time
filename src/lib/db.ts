@@ -1,13 +1,15 @@
-import mongoose from 'mongoose';
+// src/lib/db.ts
+import mongoose, { type ConnectOptions } from 'mongoose';
 
-const mongooseOptions = {
+const options: ConnectOptions = {
   minPoolSize: 5,
   maxPoolSize: 20,
   serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
   maxIdleTimeMS: 30000,
   retryWrites: true,
-  ...(process.env.NODE_ENV === 'production' && { tls: true }),
+  authSource: 'admin',
+  ...(process.env.NODE_ENV === 'production' ? { tls: true } : {}),
 };
 
 declare global {
@@ -16,6 +18,7 @@ declare global {
   // eslint-disable-next-line no-var
   var _challengeSchedulerInitialized: boolean | undefined;
 }
+
 
 function getMongoUri() {
   const uri = process.env.MONGODB_URI;
@@ -27,9 +30,6 @@ function getMongoUri() {
 
 // Mongoose connection for models — cached on global to avoid multiple connections in serverless
 export default async function connectDB() {
-  if (mongoose.connection.readyState === 1) {
-    return mongoose;
-  }
 
   if (global._mongooseConn) {
     return global._mongooseConn;
@@ -37,7 +37,7 @@ export default async function connectDB() {
 
   global._mongooseConn = (async () => {
     try {
-      return await mongoose.connect(getMongoUri(), mongooseOptions);
+      return await mongoose.connect(getMongoUri(), options);
     } catch (error) {
       console.error('Mongoose connection error:', error);
       global._mongooseConn = undefined;
@@ -48,19 +48,28 @@ export default async function connectDB() {
   return global._mongooseConn;
 }
 
-export async function pingDatabase() {
-  await connectDB();
-  const db = mongoose.connection.db;
-  if (!db) {
-    throw new Error('Mongoose database handle unavailable');
+export async function isDbHealthy() {
+  const conn = await connectDB();
+  try {
+    if (!conn.connection.db) {
+      return {
+        ok: false,
+        error: 'No database object available',
+        state: conn.connection.readyState,
+      };
+    }
+    await conn.connection.db?.admin().ping();
+    return {
+      ok: true,
+      state: conn.connection.readyState,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      state: conn.connection.readyState,
+    };
   }
-
-  await db.admin().ping();
-  return {
-    readyState: mongoose.connection.readyState,
-    host: mongoose.connection.host,
-    name: mongoose.connection.name,
-  };
 }
 
 // Initialize challenge scheduler when DB module is loaded

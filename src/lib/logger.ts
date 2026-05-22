@@ -1,38 +1,63 @@
-type LogContext = Record<string, unknown>;
+const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
 
-function serializeError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return error;
+function getLogLevel(): LogLevel {
+  const env = process.env.LOG_LEVEL?.toLowerCase();
+  if (env && LOG_LEVELS.includes(env as LogLevel)) {
+    return env as LogLevel;
   }
-
-  return {
-    name: error.name,
-    message: error.message,
-    stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
-  };
+  return process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 }
 
-function writeLog(level: 'info' | 'warn' | 'error', message: string, context: LogContext = {}) {
-  const payload = {
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    ...context,
-    error: context.error ? serializeError(context.error) : undefined,
-  };
+function formatMeta(meta: unknown) {
+  if (meta === undefined || meta === null) {
+    return '';
+  }
+  if (typeof meta === 'string') {
+    return meta;
+  }
+  try {
+    return JSON.stringify(meta, Object.getOwnPropertyNames(meta), 2);
+  } catch {
+    return String(meta);
+  }
+}
 
-  const line = JSON.stringify(payload);
-  if (level === 'error') {
-    console.error(line);
-  } else if (level === 'warn') {
-    console.warn(line);
-  } else {
-    console.log(line);
+function log(level: LogLevel, message: string, meta?: unknown) {
+  const currentLevel = getLogLevel();
+  if (LOG_LEVELS.indexOf(level) < LOG_LEVELS.indexOf(currentLevel)) {
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const correlationId = process.env.REQUEST_CORRELATION_ID || '';
+  const prefix = correlationId ? `[${correlationId}]` : '';
+  const details = formatMeta(meta);
+  const output = details ? `${timestamp} ${prefix} ${message} ${details}` : `${timestamp} ${prefix} ${message}`;
+
+  switch (level) {
+    case 'debug':
+      console.debug(output);
+      break;
+    case 'info':
+      console.info(output);
+      break;
+    case 'warn':
+      console.warn(output);
+      break;
+    case 'error':
+      console.error(output);
+      break;
   }
 }
 
 export const logger = {
-  info: (message: string, context?: LogContext) => writeLog('info', message, context),
-  warn: (message: string, context?: LogContext) => writeLog('warn', message, context),
-  error: (message: string, context?: LogContext) => writeLog('error', message, context),
+  debug: (message: string, meta?: unknown) => log('debug', message, meta),
+  info: (message: string, meta?: unknown) => log('info', message, meta),
+  warn: (message: string, meta?: unknown) => log('warn', message, meta),
+  error: (message: string, meta?: unknown) => log('error', message, meta),
 };
+
+export function createCorrelationId() {
+  return `corr_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}

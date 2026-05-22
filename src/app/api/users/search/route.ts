@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
+import { escapeRegExp } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,9 +17,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    const query = searchParams.get('q')?.trim() ?? '';
 
-    if (!query || query.trim().length < 2) {
+    if (query.length < 2) {
       return NextResponse.json(
         { message: 'Search query must be at least 2 characters long' },
         { status: 400 }
@@ -27,13 +28,15 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
+    const escapedQuery = escapeRegExp(query);
+
     // Search for users by usertag or name (case-insensitive)
     const users = await User.find({
       $and: [
         {
           $or: [
-            { usertag: { $regex: query, $options: 'i' } },
-            { name: { $regex: query, $options: 'i' } }
+            { usertag: { $regex: escapedQuery, $options: 'i' } },
+            { name: { $regex: escapedQuery, $options: 'i' } }
           ]
         },
         { _id: { $ne: session.user.id } } // Exclude current user

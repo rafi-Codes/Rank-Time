@@ -32,21 +32,21 @@ const LoadingSpinner = () => (
 
 /* ========== BUTTON VARIANTS ========== */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:transform-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-lg)] text-sm font-semibold tracking-normal ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:transform-none",
   {
     variants: {
       variant: {
         /* Primary - Main CTA */
         default:
-          "border border-transparent bg-[linear-gradient(135deg,var(--color-cyan-primary),var(--color-cyan-light))] text-[#0F1419] shadow-[0_8px_22px_rgba(0,217,255,0.28)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(0,217,255,0.42)] active:translate-y-0 active:shadow-[0_4px_12px_rgba(0,217,255,0.22)]",
+          "relative overflow-hidden border border-transparent bg-[var(--gradient-cyan-primary)] text-[#FFFFFF] shadow-[var(--shadow-cyan-sm)] before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(0,0,0,0.05))] hover:-translate-y-0.5 hover:shadow-[var(--shadow-cyan-md)] active:translate-y-0 active:shadow-[var(--shadow-cyan-sm)]",
         
         /* Secondary - Alternative action */
         secondary:
-          "border border-border bg-secondary/80 text-secondary-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted active:translate-y-0",
+          "glass-tier-1 border-[var(--glass-subtle-border)] text-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary active:translate-y-0",
         
         /* Outline - Less prominent */
         outline:
-          "glass-panel border-[var(--glass-border)] bg-[var(--glass-bg)] text-foreground hover:-translate-y-0.5 hover:border-primary/60 hover:text-primary hover:shadow-[0_10px_30px_rgba(0,217,255,0.16)] active:translate-y-0",
+          "glass-tier-2 border-[var(--glass-standard-border)] text-foreground hover:-translate-y-0.5 hover:border-primary/60 hover:text-primary hover:shadow-[var(--shadow-cyan-sm)] active:translate-y-0",
         
         /* Ghost - Minimal style */
         ghost: "text-foreground hover:bg-primary/10 hover:text-primary active:bg-primary/20",
@@ -56,11 +56,11 @@ const buttonVariants = cva(
         
         /* Destructive - Danger action */
         destructive:
-          "border border-transparent bg-destructive text-destructive-foreground shadow-sm hover:-translate-y-0.5 hover:bg-destructive/90 hover:shadow-md active:translate-y-0 active:bg-destructive/95",
+          "border border-transparent bg-[var(--color-danger)] text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0",
         
         /* Success - Positive action */
         success:
-          "border border-transparent bg-success text-white shadow-sm hover:-translate-y-0.5 hover:bg-success/90 hover:shadow-md active:translate-y-0",
+          "border border-transparent bg-[var(--color-success)] text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0",
       },
       size: {
         /* Compact sizes */
