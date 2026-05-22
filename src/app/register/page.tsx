@@ -4,11 +4,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AuthPageShell } from '@/components/auth-page-shell';
+import { SocialAuthButtons } from '@/components/social-auth-buttons';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -18,10 +20,9 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const router = useRouter();
 
-  // Validation helper
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -51,7 +52,7 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    
+
     if (!validateForm()) {
       setError('Please fix the errors below');
       return;
@@ -78,31 +79,21 @@ export default function RegisterPage() {
         throw new Error(data.message || 'Failed to create account');
       }
 
-      // Redirect to OTP verification page
       router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create account';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const passwordStrength = password.length >= 7 ? 'strong' : password.length >= 4 ? 'medium' : password.length > 0 ? 'weak' : '';
+  const passwordStrength =
+    password.length >= 7 ? 'strong' : password.length >= 4 ? 'medium' : password.length > 0 ? 'weak' : '';
 
   return (
-    <div className="page-shell flex min-h-screen items-center justify-center px-4 py-16">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-4">
-        <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105">
-            <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-            <span className="brand-gradient text-xl font-bold">RankTime</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Register Card */}
-      <Card variant="elevated" className="w-full max-w-md">
+    <AuthPageShell>
+      <Card variant="elevated" className="w-full">
         <CardHeader className="space-y-3">
           <CardTitle className="text-2xl">Create an account</CardTitle>
           <CardDescription>
@@ -110,17 +101,20 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Alert */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Registration Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+        <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Registration Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {/* Full Name Field */}
+          <SocialAuthButtons
+            disabled={isLoading}
+            dividerLabel="or sign up with email"
+          />
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">
                 Full Name *
@@ -143,7 +137,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
                 Email Address *
@@ -164,12 +157,11 @@ export default function RegisterPage() {
                   }
                 }}
                 error={!!errors.email}
-                helperText={errors.email || 'We\'ll never share your email'}
+                helperText={errors.email || "We'll never share your email"}
                 disabled={isLoading}
               />
             </div>
 
-            {/* Password Field */}
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
                 Password *
@@ -194,7 +186,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Confirm Password Field */}
             <div className="space-y-2">
               <Label htmlFor="confirm-password" className="text-sm font-medium">
                 Confirm Password *
@@ -211,13 +202,14 @@ export default function RegisterPage() {
                   }
                 }}
                 error={!!errors.confirmPassword}
-                success={confirmPassword === password && password !== '' && !errors.confirmPassword}
+                success={
+                  confirmPassword === password && password !== '' && !errors.confirmPassword
+                }
                 helperText={errors.confirmPassword}
                 disabled={isLoading}
               />
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               className="w-full"
@@ -229,10 +221,9 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          {/* Sign In Link */}
-          <div className="mt-6 text-center">
+          <div className="border-t border-border/50 pt-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+              Already have an account?{' '}
               <Link
                 href="/login"
                 className="font-semibold text-primary transition-colors hover:text-primary/90"
@@ -242,27 +233,18 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Terms */}
-          <p className="mt-4 text-center text-xs text-muted-foreground/70">
-            By creating an account, you agree to our{" "}
+          <p className="text-center text-xs text-muted-foreground/70">
+            By creating an account, you agree to our{' '}
             <Link href="/terms" className="underline hover:text-primary">
               Terms of Service
-            </Link>
-            {" "}and{" "}
+            </Link>{' '}
+            and{' '}
             <Link href="/privacy" className="underline hover:text-primary">
               Privacy Policy
             </Link>
           </p>
         </CardContent>
       </Card>
-
-      {/* Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 hidden border-t border-border/70 py-6 text-center text-sm text-muted-foreground md:block">
-        <div>
-          <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
-          <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
-        </div>
-      </footer>
-    </div>
+    </AuthPageShell>
   );
 }

@@ -1,16 +1,17 @@
 // src/app/login/page.tsx
 'use client';
 
-import { signIn, getSession, getProviders } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Github, Chrome } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AuthPageShell } from '@/components/auth-page-shell';
+import { SocialAuthButtons } from '@/components/social-auth-buttons';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -26,8 +27,6 @@ export default function LoginPage() {
   const [fpStatus, setFpStatus] = useState('');
   const [fpLoading, setFpLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'github' | null>(null);
-  const [socialProviders, setSocialProviders] = useState({ google: false, github: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
@@ -36,15 +35,6 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const message = params.get('message');
     if (message) setSuccess(message);
-  }, []);
-
-  useEffect(() => {
-    getProviders().then((providers) => {
-      setSocialProviders({
-        google: Boolean(providers?.google),
-        github: Boolean(providers?.github),
-      });
-    });
   }, []);
 
   const validateLogin = (): boolean => {
@@ -61,7 +51,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!validateLogin()) {
       setError('Please fix the errors below');
       return;
@@ -91,22 +81,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleOAuthSignIn(provider: 'google' | 'github') {
-    setError('');
-    setSuccess('');
-    setSocialLoading(provider);
-
-    const result = await signIn(provider, {
-      callbackUrl: '/dashboard',
-      redirect: true,
-    });
-
-    if (result?.error) {
-      setError(result.error);
-      setSocialLoading(null);
-    }
-  }
-
   const handleSendOTP = async () => {
     setFpLoading(true);
     setFpStatus('');
@@ -130,13 +104,13 @@ export default function LoginPage() {
   const handleResetPassword = async () => {
     setResetLoading(true);
     setFpStatus('');
-    
+
     if (newPassword !== confirmPassword) {
       setFpStatus('Passwords do not match');
       setResetLoading(false);
       return;
     }
-    
+
     if (newPassword.length < 7) {
       setFpStatus('Password must be at least 7 characters');
       setResetLoading(false);
@@ -171,90 +145,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="page-shell min-h-screen">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-4 z-10">
-        <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105">
-            <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-            <span className="brand-gradient text-xl font-bold">RankTime</span>
-          </Link>
-        </div>
-      </div>
+    <AuthPageShell>
+      {!showForgot ? (
+        <Card variant="elevated" className="w-full">
+          <CardHeader className="space-y-3">
+            <CardTitle className="text-2xl">Sign in to your account</CardTitle>
+            <CardDescription>
+              Access your RankTime dashboard and track your progress
+            </CardDescription>
+          </CardHeader>
 
-      {/* Main Content */}
-      <div className="flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        {!showForgot ? (
-          /* Login Card */
-          <Card variant="elevated" className="w-full max-w-md">
-            <CardHeader className="space-y-3">
-              <CardTitle className="text-2xl">Sign in to your account</CardTitle>
-              <CardDescription>
-                Access your RankTime dashboard and track your progress
-              </CardDescription>
-            </CardHeader>
+          <CardContent className="space-y-6">
+            {success && (
+              <Alert variant="success">
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
 
-            <CardContent className="space-y-6">
-              {/* Success Message */}
-              {success && (
-                <Alert variant="success">
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>{success}</AlertDescription>
-                </Alert>
-              )}
+            {error && (
+              <Alert variant="destructive">
+                <AlertTitle>Sign In Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              {/* Error Message */}
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Sign In Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            <SocialAuthButtons disabled={isLoading} />
 
-              {/* OAuth Buttons */}
-              {(socialProviders.google || socialProviders.github) && (
-                <>
-                  <div className="space-y-3">
-                    {socialProviders.google && (
-                      <Button
-                        type="button"
-                        onClick={() => handleOAuthSignIn('google')}
-                        disabled={!!socialLoading || isLoading}
-                        variant="outline"
-                        className="w-full"
-                        icon={<Chrome className="h-4 w-4" />}
-                        isLoading={socialLoading === 'google'}
-                        loadingText="Connecting..."
-                      >
-                        Continue with Google
-                      </Button>
-                    )}
-                    {socialProviders.github && (
-                      <Button
-                        type="button"
-                        onClick={() => handleOAuthSignIn('github')}
-                        disabled={!!socialLoading || isLoading}
-                        variant="secondary"
-                        className="w-full"
-                        icon={<Github className="h-4 w-4" />}
-                        isLoading={socialLoading === 'github'}
-                        loadingText="Connecting..."
-                      >
-                        Continue with GitHub
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Divider */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-border" />
-                    <span className="text-xs uppercase text-muted-foreground">or</span>
-                    <div className="h-px flex-1 bg-border" />
-                  </div>
-                </>
-              )}
-
-              {/* Email Input */}
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email-address" className="text-sm font-medium">
                   Email Address *
@@ -277,7 +195,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password *
@@ -300,10 +217,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Sign In Button */}
               <Button
                 type="submit"
-                onClick={handleSubmit}
                 isLoading={isLoading}
                 loadingText="Signing in..."
                 size="lg"
@@ -311,181 +226,170 @@ export default function LoginPage() {
               >
                 Sign In
               </Button>
+            </form>
 
-              {/* Forgot Password Link */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgot(true);
-                    setFpStatus('');
-                  }}
-                  className="text-sm font-medium text-primary hover:text-primary/90 transition-colors"
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgot(true);
+                  setFpStatus('');
+                }}
+                className="text-sm font-medium text-primary transition-colors hover:text-primary/90"
+              >
+                Forgot password?
+              </button>
+            </div>
+
+            <div className="border-t border-border/50 pt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/register"
+                  className="font-semibold text-primary transition-colors hover:text-primary/90"
                 >
-                  Forgot password?
-                </button>
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card variant="elevated" className="w-full">
+          <CardHeader className="space-y-3">
+            <CardTitle className="text-2xl">Reset your password</CardTitle>
+            <CardDescription>
+              {!otpSent
+                ? 'Enter your email to receive a password reset code'
+                : 'Enter the code and choose a new password'}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {fpStatus && (
+              <Alert variant={fpStatus.includes('successful') ? 'success' : 'default'}>
+                <AlertDescription>{fpStatus}</AlertDescription>
+              </Alert>
+            )}
+
+            {!otpSent ? (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email" className="text-sm font-medium">
+                    Email Address *
+                  </Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={fpLoading}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleSendOTP}
+                  isLoading={fpLoading}
+                  loadingText="Sending..."
+                  size="lg"
+                  className="w-full"
+                >
+                  Send Reset Code
+                </Button>
               </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="otp-code" className="text-sm font-medium">
+                    Verification Code *
+                  </Label>
+                  <Input
+                    id="otp-code"
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    placeholder="000000"
+                    disabled={resetLoading}
+                  />
+                </div>
 
-              {/* Sign Up Link */}
-              <div className="text-center pt-2 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">
-                  Don&apos;t have an account?{' '}
-                  <Link
-                    href="/register"
-                    className="font-semibold text-primary hover:text-primary/90 transition-colors"
-                  >
-                    Sign up
-                  </Link>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Password Reset Card */
-          <Card variant="elevated" className="w-full max-w-md">
-            <CardHeader className="space-y-3">
-              <CardTitle className="text-2xl">Reset your password</CardTitle>
-              <CardDescription>
-                {!otpSent
-                  ? 'Enter your email to receive a password reset code'
-                  : 'Enter the code and choose a new password'}
-              </CardDescription>
-            </CardHeader>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-sm font-medium">
+                    New Password *
+                  </Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    helperText="At least 7 characters"
+                    disabled={resetLoading}
+                  />
+                </div>
 
-            <CardContent className="space-y-6">
-              {fpStatus && (
-                <Alert variant={fpStatus.includes('successful') ? 'success' : 'default'}>
-                  <AlertDescription>{fpStatus}</AlertDescription>
-                </Alert>
-              )}
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password" className="text-sm font-medium">
+                    Confirm Password *
+                  </Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    success={confirmPassword === newPassword && newPassword !== ''}
+                    disabled={resetLoading}
+                  />
+                </div>
 
-              {!otpSent ? (
-                /* Send OTP Step */
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email" className="text-sm font-medium">
-                      Email Address *
-                    </Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      disabled={fpLoading}
-                    />
-                  </div>
-
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <Button
-                    onClick={handleSendOTP}
-                    isLoading={fpLoading}
-                    loadingText="Sending..."
+                    type="button"
+                    onClick={handleResetPassword}
+                    isLoading={resetLoading}
+                    loadingText="Resetting..."
                     size="lg"
-                    className="w-full"
+                    className="flex-1"
+                    variant="success"
                   >
-                    Send Reset Code
+                    Reset Password
                   </Button>
-                </>
-              ) : (
-                /* Reset Password Step */
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="otp-code" className="text-sm font-medium">
-                      Verification Code *
-                    </Label>
-                    <Input
-                      id="otp-code"
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="000000"
-                      disabled={resetLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password" className="text-sm font-medium">
-                      New Password *
-                    </Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      helperText="At least 7 characters"
-                      disabled={resetLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-new-password" className="text-sm font-medium">
-                      Confirm Password *
-                    </Label>
-                    <Input
-                      id="confirm-new-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      success={confirmPassword === newPassword && newPassword !== ''}
-                      disabled={resetLoading}
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleResetPassword}
-                      isLoading={resetLoading}
-                      loadingText="Resetting..."
-                      size="lg"
-                      className="flex-1"
-                      variant="success"
-                    >
-                      Reset Password
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setShowForgot(false);
-                        setOtpSent(false);
-                        setFpStatus('');
-                      }}
-                      size="lg"
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {/* Back to Login */}
-              <div className="text-center pt-2 border-t border-border/50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgot(false);
-                    setOtpSent(false);
-                    setFpStatus('');
-                  }}
-                  className="text-sm font-medium text-primary hover:text-primary/90 transition-colors"
-                >
-                  Back to sign in
-                </button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setShowForgot(false);
+                      setOtpSent(false);
+                      setFpStatus('');
+                    }}
+                    size="lg"
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            )}
 
-      {/* Footer */}
-      <footer className="mt-8 border-t border-border/70 py-6">
-        <div className="text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
-          <p className="mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
-        </div>
-      </footer>
-    </div>
+            <div className="border-t border-border/50 pt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgot(false);
+                  setOtpSent(false);
+                  setFpStatus('');
+                }}
+                className="text-sm font-medium text-primary transition-colors hover:text-primary/90"
+              >
+                Back to sign in
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </AuthPageShell>
   );
 }
