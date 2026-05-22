@@ -5,91 +5,109 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Session from '@/models/Session';
 import User from '@/models/User';
-import { OpenRouter } from '@openrouter/sdk';
+import { callOpenRouterChat } from '@/lib/openRouterClient';
+import { redisGet, redisSet } from '@/lib/redisClient';
+import { measureExecution } from '@/lib/monitoring';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return measureExecution('sessions.replay', async () => {
+    try {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      await connectDB();
+
+      const user = await User.findOne({ email: session.user.email });
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const { searchParams } = new URL(request.url);
+      const sessionId = searchParams.get('sessionId');
+
+      if (!sessionId) {
+        return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+      }
+
+      // Get the specific session
+      const sessionData = await Session.findOne({
+        _id: sessionId,
+        user: user._id
+      });
+
+      if (!sessionData) {
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+
+      const cacheKey = `sessionReplay:${sessionId}`;
+      const cachedAnalysis = await redisGet(cacheKey);
+      if (cachedAnalysis) {
+        return NextResponse.json(JSON.parse(cachedAnalysis));
+      }
+
+      // Get recent sessions for context (last 5 sessions)
+      const recentSessions = await Session.find({
+        user: user._id,
+        createdAt: { $lte: sessionData.createdAt }
+      })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+      // Generate AI analysis for this session
+      const analysis = await generateSessionAnalysis(sessionData, recentSessions);
+      const payload = {
+        session: {
+          _id: sessionData._id,
+          problemName: sessionData.problemName,
+          problemRating: sessionData.problemRating,
+          laps: sessionData.laps,
+          totalTime: sessionData.totalTime,
+          score: sessionData.score,
+          streakBonus: sessionData.streakBonus,
+          comments: sessionData.comments,
+          createdAt: sessionData.createdAt
+        },
+        analysis
+      };
+
+      try {
+        await redisSet(cacheKey, JSON.stringify(payload), 300);
+      } catch (cacheError) {
+        console.warn('Unable to cache session replay response', cacheError);
+      }
+
+      return NextResponse.json(payload);
+
+    } catch (error) {
+      console.error('Error fetching session replay:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    await connectDB();
-
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('sessionId');
-
-    if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
-    }
-
-    // Get the specific session
-    const sessionData = await Session.findOne({
-      _id: sessionId,
-      user: user._id
-    });
-
-    if (!sessionData) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    // Get recent sessions for context (last 5 sessions)
-    const recentSessions = await Session.find({
-      user: user._id,
-      createdAt: { $lte: sessionData.createdAt }
-    })
-    .sort({ createdAt: -1 })
-    .limit(5);
-
-    // Generate AI analysis for this session
-    const analysis = await generateSessionAnalysis(sessionData, recentSessions);
-
-    return NextResponse.json({
-      session: {
-        _id: sessionData._id,
-        problemName: sessionData.problemName,
-        problemRating: sessionData.problemRating,
-        laps: sessionData.laps,
-        totalTime: sessionData.totalTime,
-        score: sessionData.score,
-        streakBonus: sessionData.streakBonus,
-        comments: sessionData.comments,
-        createdAt: sessionData.createdAt
-      },
-      analysis
-    });
-
-  } catch (error) {
-    console.error('Error fetching session replay:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  });
 }
 
 async function generateSessionAnalysis(sessionData: any, recentSessions: any[]) {
   try {
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY is not set');
+    }
 
-    // Calculate performance metrics
     const lapsCount = Array.isArray(sessionData.laps) ? sessionData.laps.length : (typeof sessionData.laps === 'number' ? sessionData.laps : 0);
     const avgTimePerLap = lapsCount > 0 ? sessionData.totalTime / lapsCount : 0;
     const baseScore = sessionData.score - sessionData.streakBonus;
 
-    // Compare with recent sessions
-    const recentAvgRating = recentSessions.length > 1
-      ? recentSessions.slice(1).reduce((sum, s) => sum + s.problemRating, 0) / (recentSessions.length - 1)
+    const filteredRecentSessions = recentSessions.filter((s) => String(s._id) !== String(sessionData._id));
+    const recentAvgRating = filteredRecentSessions.length > 0
+      ? filteredRecentSessions.reduce((sum, s) => sum + s.problemRating, 0) / filteredRecentSessions.length
       : sessionData.problemRating;
 
     const ratingProgress = sessionData.problemRating - recentAvgRating;
+    const sessionAgeDays = Math.max(0, Math.floor((Date.now() - new Date(sessionData.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+    const relativeDifficulty = assessDifficultyMatch(sessionData.problemRating, sessionData.totalTime, sessionData.laps);
 
     const systemPrompt = `You are an AI coding coach analyzing a user's coding session. Provide detailed, constructive feedback about their performance. Focus on:
 
@@ -106,34 +124,37 @@ Session Details:
 - Problem: ${sessionData.problemName}
 - Rating: ${sessionData.problemRating}
 - Time taken: ${Math.floor(sessionData.totalTime / 60)}m ${sessionData.totalTime % 60}s
-- Laps completed: ${sessionData.laps}
+- Laps completed: ${lapsCount}
 - Score earned: ${sessionData.score} (${sessionData.streakBonus > 0 ? `+${sessionData.streakBonus} streak bonus` : 'no bonus'})
 - User comments: ${sessionData.comments || 'None provided'}
 
 Recent Performance Context:
 - Average recent problem rating: ${recentAvgRating.toFixed(0)}
 - Rating progress: ${ratingProgress >= 0 ? '+' : ''}${ratingProgress.toFixed(1)}
+- Session age: ${sessionAgeDays} day(s)
 
 Please provide a comprehensive analysis of this coding session.`;
 
-    const completion = await openRouter.chat.send({
+    const completion = await callOpenRouterChat({
       model: 'openai/gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: analysisPrompt }
       ],
-      maxTokens: 800,
-      temperature: 0.7,
+      maxTokens: 900,
+      temperature: 0.65,
     });
 
-    const aiAnalysis = completion.choices[0].message.content;
+    const aiAnalysis = completion.response;
+    if (completion.provider === 'fallback') {
+      console.warn('Session replay AI used fallback provider');
+    }
 
-    // Generate additional insights
     const insights = {
       timeEfficiency: calculateTimeEfficiency(sessionData),
-      difficultyMatch: assessDifficultyMatch(sessionData.problemRating, sessionData.totalTime, sessionData.laps),
+      difficultyMatch: relativeDifficulty,
       progressTrend: ratingProgress > 0 ? 'improving' : ratingProgress < 0 ? 'challenging' : 'consistent',
-      recommendations: generateRecommendations(sessionData, recentSessions)
+      recommendations: generateRecommendations(sessionData, filteredRecentSessions)
     };
 
     return {
@@ -143,7 +164,9 @@ Please provide a comprehensive analysis of this coding session.`;
         avgTimePerLap: Math.round(avgTimePerLap),
         baseScore,
         ratingProgress: Math.round(ratingProgress * 10) / 10,
-        performanceLevel: getPerformanceLevel(sessionData.problemRating, sessionData.totalTime)
+        performanceLevel: getPerformanceLevel(sessionData.problemRating, sessionData.totalTime),
+        sessionAgeDays,
+        problemDifficulty: relativeDifficulty,
       }
     };
 
@@ -164,7 +187,9 @@ Please provide a comprehensive analysis of this coding session.`;
         })(),
         baseScore: sessionData.score - sessionData.streakBonus,
         ratingProgress: 0,
-        performanceLevel: 'unknown'
+        performanceLevel: 'unknown',
+        sessionAgeDays: Math.max(0, Math.floor((Date.now() - new Date(sessionData.createdAt).getTime()) / (1000 * 60 * 60 * 24))),
+        problemDifficulty: 'unknown'
       }
     };
   }

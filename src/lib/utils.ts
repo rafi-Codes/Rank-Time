@@ -9,6 +9,27 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+export function getAppBaseUrl(): string {
+  const rawUrl =
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  return rawUrl.replace(/\/+$/, '');
+}
+
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function sanitizeString(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 // Generate a random unique usertag
 export function generateUserTag(): string {
   const adjectives = [

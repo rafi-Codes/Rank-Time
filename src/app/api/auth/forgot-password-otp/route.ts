@@ -1,37 +1,66 @@
 // src/app/api/auth/forgot-password-otp/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import User from '@/models/User';
+import connectDB from '@/lib/db';
+import mongoose from 'mongoose';
 import { generateOtp, sendEmail } from '@/lib/email';
+import { checkPasswordResetAttempts } from '@/lib/rateLimiters';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { forgotPasswordOtpSchema } from '@/lib/validation';
+import { normalizeEmail } from '@/lib/utils';
+import { successResponse, errorResponse } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  try {
+  return withErrorHandler(async () => {
     const body = await request.json();
-    const { email } = body;
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ message: 'Invalid email' }, { status: 400 });
+    const parsed = forgotPasswordOtpSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Invalid email provided', 422, parsed.error.format()),
+        { status: 422 }
+      );
     }
 
-    const client = await connectToDatabase();
-    const db = client.db();
+    const email = normalizeEmail(parsed.data.email);
 
-    const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+    const ip = request.headers.get('x-forwarded-for') || 'unknown_ip';
+    const rate = await checkPasswordResetAttempts(request as any, {
+      email,
+      ip,
+      purpose: 'reset',
+    });
 
-    // Always return success (avoid account enumeration)
+    if (!rate.ok) {
+      return NextResponse.json(
+        errorResponse('OTP_RATE_LIMITED', 'If an account exists, an OTP was sent.', 429),
+        { status: 429 }
+      );
+    }
+
+    const conn = await connectDB();
+    const db = conn.connection.db;
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
+    const user = await db.collection('users').findOne({ email });
+
     if (!user) {
-      return NextResponse.json({ message: 'If an account exists, an OTP was sent.' });
+      return NextResponse.json(
+        successResponse({}, 'If an account exists, an OTP was sent.', 200),
+        { status: 200 }
+      );
     }
 
-    // Remove previous reset OTPs for this email
-    await db.collection('emailOtps').deleteMany({ email: email.toLowerCase(), purpose: 'reset' });
+    await db.collection('emailOtps').deleteMany({ email, purpose: 'reset' });
 
     const otp = generateOtp(6);
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await db.collection('emailOtps').insertOne({
-      email: email.toLowerCase(),
+      email,
       otp,
       purpose: 'reset',
       createdAt: new Date(),
@@ -48,9 +77,12 @@ export async function POST(request: Request) {
       console.error('Failed to send reset OTP email:', err);
     }
 
-    return NextResponse.json({ message: 'If an account exists, an OTP was sent.' });
-  } catch (err) {
-    console.error('forgot-password-otp error:', err);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(
+      successResponse({}, 'If an account exists, an OTP was sent.', 200),
+      { status: 200 }
+    );
+  }, {
+    fallbackCode: 'OTP_REQUEST_FAILED',
+    fallbackMessage: 'If an account exists, an OTP was sent.',
+  });
 }

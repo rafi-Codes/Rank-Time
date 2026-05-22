@@ -4,17 +4,19 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-import { connectToDatabase } from '@/lib/db';
+import connectDB from '@/lib/db';
 import { generateUserTag, normalizeEmail } from '@/lib/utils';
-import type { Db } from 'mongodb';
+import User from '@/models/User';
 
-async function generateUniqueUserTag(db: Db) {
+async function generateUniqueUserTag() {
+
   let usertag = generateUserTag();
   let attempts = 0;
 
-  while (await db.collection('users').findOne({ usertag })) {
+  while (await User.exists({ usertag })) {
     usertag = generateUserTag();
     attempts += 1;
+
 
     if (attempts > 10) {
       throw new Error('Failed to generate unique usertag');
@@ -25,6 +27,7 @@ async function generateUniqueUserTag(db: Db) {
 }
 
 async function getOrCreateOAuthUser(profile: {
+
   email?: string | null;
   name?: string | null;
   image?: string | null;
@@ -34,10 +37,13 @@ async function getOrCreateOAuthUser(profile: {
   }
 
   const email = normalizeEmail(profile.email);
-  const client = await connectToDatabase();
-  const db = client.db();
-  const users = db.collection('users');
-  const existingUser = await users.findOne({ email });
+
+  // Use Mongoose-backed collections for OAuth writes
+  await connectDB();
+
+  const existingUser = await User.findOne({ email });
+
+
 
   if (existingUser) {
     const updates: Record<string, unknown> = {
@@ -50,25 +56,31 @@ async function getOrCreateOAuthUser(profile: {
     if (profile.image && profile.image !== existingUser.image) updates.image = profile.image;
 
     if (!existingUser.usertag) {
-      updates.usertag = await generateUniqueUserTag(db);
+      updates.usertag = await generateUniqueUserTag();
     }
 
-    await users.updateOne({ _id: existingUser._id }, { $set: updates });
+    await User.updateOne({ _id: existingUser._id }, { $set: updates });
 
     return {
-      ...existingUser,
-      ...updates,
+      id: existingUser._id.toString(),
+      email: existingUser.email,
+      name: (updates.name as string) || existingUser.name,
+      image: (updates.image as string) || existingUser.image,
+      verified: true,
+      emailVerified: updates.emailVerified as Date,
+      usertag: (updates.usertag as string) || existingUser.usertag,
     };
   }
 
+
   const now = new Date();
-  const result = await users.insertOne({
+  const result = await User.create({
     name: profile.name || email.split('@')[0],
     email,
     image: profile.image || null,
     verified: true,
     emailVerified: now,
-    usertag: await generateUniqueUserTag(db),
+    usertag: await generateUniqueUserTag(),
     following: [],
     totalScore: 0,
     currentStreak: 0,
@@ -80,8 +92,17 @@ async function getOrCreateOAuthUser(profile: {
     updatedAt: now,
   });
 
-  return users.findOne({ _id: result.insertedId });
+  return {
+    id: result._id.toString(),
+    email: result.email,
+    name: result.name,
+    image: result.image,
+    verified: result.verified,
+    emailVerified: result.emailVerified,
+    usertag: result.usertag,
+  };
 }
+
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.DEBUG_AUTH === 'true',
@@ -101,14 +122,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
-        let client;
         try {
-          client = await connectToDatabase();
-          const db = client.db();
+          await connectDB();
+          const user = await User.findOne({ email });
 
-          const user = await db.collection('users').findOne({
-            email,
-          });
 
           if (!user) {
             throw new Error('Invalid email or password');
@@ -134,6 +151,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             image: user.image,
           };
+
         } catch (error) {
           console.error('Auth error:', error);
           throw error;
@@ -197,7 +215,7 @@ export const authOptions: NextAuthOptions = {
               throw new Error('Failed to load OAuth user');
             }
 
-            token.id = dbUser._id.toString();
+            token.id = dbUser.id;
           } else {
             token.id = user.id;
           }

@@ -1,41 +1,70 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import connectDB from '@/lib/db';
 import { normalizeEmail } from '@/lib/utils';
+import { verifyOtpSchema } from '@/lib/validation';
+import { checkOtpAttempts, recordFailedOtpAttempt, clearOtpAttemptRecord } from '@/lib/rateLimiters';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { errorResponse, successResponse } from '@/lib/apiResponse';
+import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  try {
+  return withErrorHandler(async () => {
     const body = await request.json();
-    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-    const otp = typeof body.otp === 'string' ? body.otp.trim() : '';
+    const parsed = verifyOtpSchema.safeParse(body);
 
-    if (!email || !otp) {
-      return NextResponse.json({ message: 'Email and OTP are required' }, { status: 422 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Invalid request body', 422, parsed.error.format()),
+        { status: 422 }
+      );
     }
 
-    const client = await connectToDatabase();
-    const db = client.db();
+    const email = normalizeEmail(parsed.data.email);
+    const otp = parsed.data.otp;
+    const ip = request.headers.get('x-forwarded-for') || 'unknown_ip';
 
-    const record = await db.collection('emailOtps').findOne({ email, otp });
-    if (!record) {
-      return NextResponse.json({ message: 'Invalid code' }, { status: 400 });
+    const rate = await checkOtpAttempts(request as any, {
+      email,
+      ip,
+      purpose: 'verify',
+    });
+
+    if (!rate.ok) {
+      return NextResponse.json(
+        errorResponse('OTP_RATE_LIMITED', 'Invalid code', 429),
+        { status: 429 }
+      );
     }
 
-    if (record.expiresAt && new Date(record.expiresAt) < new Date()) {
-      return NextResponse.json({ message: 'Code expired' }, { status: 400 });
+    const conn = await connectDB();
+    const db = conn.connection.db;
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
+    const record = await db.collection('emailOtps').findOne({ email, otp, purpose: 'verify' });
+
+    if (!record || !record.expiresAt || new Date(record.expiresAt) < new Date()) {
+      await recordFailedOtpAttempt(email, ip, 'verify');
+      return NextResponse.json(
+        errorResponse('INVALID_CODE', 'Invalid code', 400),
+        { status: 400 }
+      );
     }
 
-    // Check if this is a registration verification (has registrationData)
     if (record.registrationData) {
       const existingUser = await db.collection('users').findOne({ email });
       if (existingUser) {
         await db.collection('emailOtps').deleteMany({ email });
-        return NextResponse.json({ message: 'Email already verified. Please sign in.' }, { status: 200 });
+        await clearOtpAttemptRecord(email, ip, 'verify');
+        return NextResponse.json(
+          successResponse({}, 'If an account exists, an OTP was sent.', 200),
+          { status: 200 }
+        );
       }
 
-      // Create the user account now that OTP is verified
       await db.collection('users').insertOne({
         ...record.registrationData,
         verified: true,
@@ -52,30 +81,34 @@ export async function POST(request: Request) {
         updatedAt: new Date(),
       });
 
-      // Remove used OTPs for this email
       await db.collection('emailOtps').deleteMany({ email });
+      await clearOtpAttemptRecord(email, ip, 'verify');
 
-      return NextResponse.json({ message: 'Account created and email verified' }, { status: 200 });
-    } else {
-      // This is an existing user verification
-      // Mark user as verified
-      await db.collection('users').updateOne(
-        { _id: record.userId },
-        {
-          $set: {
-            verified: true,
-            emailVerified: new Date(),
-          },
-        }
+      return NextResponse.json(
+        successResponse({}, 'Account created and email verified', 200),
+        { status: 200 }
       );
-
-      // Remove used OTPs for this user/email
-      await db.collection('emailOtps').deleteMany({ userId: record.userId });
-
-      return NextResponse.json({ message: 'Email verified' }, { status: 200 });
     }
-  } catch (error) {
-    console.error('verify-otp error:', error);
-    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
-  }
+
+    await db.collection('users').updateOne(
+      { _id: record.userId },
+      {
+        $set: {
+          verified: true,
+          emailVerified: new Date(),
+        },
+      }
+    );
+
+    await db.collection('emailOtps').deleteMany({ userId: record.userId });
+    await clearOtpAttemptRecord(email, ip, 'verify');
+
+    return NextResponse.json(
+      successResponse({}, 'Email verified', 200),
+      { status: 200 }
+    );
+  }, {
+    fallbackCode: 'VERIFY_OTP_FAILURE',
+    fallbackMessage: 'Invalid code',
+  });
 }

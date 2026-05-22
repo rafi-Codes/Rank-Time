@@ -3,16 +3,23 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { hashPassword } from '@/lib/auth';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { errorResponse, successResponse } from '@/lib/apiResponse';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  try {
+  return withErrorHandler(async () => {
     const body = await request.json();
-    const { token, password } = body;
+    const token = typeof body?.token === 'string' ? body.token : '';
+    const password = typeof body?.password === 'string' ? body.password : '';
 
-    if (!token || typeof token !== 'string' || !password || typeof password !== 'string' || password.trim().length < 7) {
-      return NextResponse.json({ message: 'Invalid request' }, { status: 400 });
+    if (!token || !password || password.trim().length < 7) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Invalid request', 400),
+        { status: 400 }
+      );
     }
 
     await connectDB();
@@ -23,7 +30,10 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ message: 'Token invalid or expired' }, { status: 400 });
+      return NextResponse.json(
+        errorResponse('INVALID_TOKEN', 'Token invalid or expired', 400),
+        { status: 400 }
+      );
     }
 
     user.password = await hashPassword(password);
@@ -31,9 +41,12 @@ export async function POST(request: Request) {
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    return NextResponse.json({ message: 'Password reset successful' });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(
+      successResponse({}, 'Password reset successful', 200),
+      { status: 200 }
+    );
+  }, {
+    fallbackCode: 'RESET_PASSWORD_FAILED',
+    fallbackMessage: 'Unable to reset password',
+  });
 }

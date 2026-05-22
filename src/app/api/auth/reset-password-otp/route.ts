@@ -1,55 +1,91 @@
 // src/app/api/auth/reset-password-otp/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { hashPassword } from '@/lib/auth';
 import { normalizeEmail } from '@/lib/utils';
+import { resetPasswordOtpSchema } from '@/lib/validation';
+import { checkOtpAttempts, recordFailedOtpAttempt, clearOtpAttemptRecord } from '@/lib/rateLimiters';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { errorResponse, successResponse } from '@/lib/apiResponse';
+import mongoose from 'mongoose';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  try {
+  return withErrorHandler(async () => {
     const body = await request.json();
-    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-    const otp = typeof body.otp === 'string' ? body.otp.trim() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
+    const parsed = resetPasswordOtpSchema.safeParse(body);
 
-    if (!email || !otp || !password) {
-      return NextResponse.json({ message: 'Invalid request' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Invalid reset payload', 422, parsed.error.format()),
+        { status: 422 }
+      );
     }
 
-    if (typeof password !== 'string' || password.trim().length < 7) {
-      return NextResponse.json({ message: 'Password must be at least 7 characters' }, { status: 400 });
+    const email = normalizeEmail(parsed.data.email);
+    const otp = parsed.data.otp;
+    const password = parsed.data.password;
+    const ip = request.headers.get('x-forwarded-for') || 'unknown_ip';
+
+    const rate = await checkOtpAttempts(request as any, {
+      email,
+      ip,
+      purpose: 'reset',
+    });
+
+    if (!rate.ok) {
+      return NextResponse.json(
+        errorResponse('OTP_RATE_LIMITED', 'Invalid code', 429),
+        { status: 429 }
+      );
     }
 
-    const client = await connectToDatabase();
-    const db = client.db();
+    const conn = await connectDB();
+    const db = conn.connection.db;
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
 
     const otpRecord = await db.collection('emailOtps').findOne({
       email,
       otp,
       purpose: 'reset',
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
 
     if (!otpRecord) {
-      return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
+      await recordFailedOtpAttempt(email, ip, 'reset');
+      return NextResponse.json(
+        errorResponse('INVALID_CODE', 'Invalid code', 400),
+        { status: 400 }
+      );
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      // Keep failure message generic to avoid account enumeration.
+      await recordFailedOtpAttempt(email, ip, 'reset');
+      return NextResponse.json(
+        errorResponse('INVALID_CODE', 'Invalid code', 400),
+        { status: 400 }
+      );
     }
 
     user.password = await hashPassword(password);
     await user.save();
 
-    // cleanup used otps
     await db.collection('emailOtps').deleteMany({ email, purpose: 'reset' });
+    await clearOtpAttemptRecord(email, ip, 'reset');
 
-    return NextResponse.json({ message: 'Password reset successful' });
-  } catch (err) {
-    console.error('reset-password-otp error:', err);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(
+      successResponse({}, 'Password reset successful', 200),
+      { status: 200 }
+    );
+  }, {
+    fallbackCode: 'RESET_PASSWORD_FAILED',
+    fallbackMessage: 'Invalid code',
+  });
 }

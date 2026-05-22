@@ -5,187 +5,235 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Session from '@/models/Session';
 import User from '@/models/User';
-import { generateUserTag } from '@/lib/utils';
 import UserActivity from '@/models/UserActivity';
 import { getLeagueForScore } from '@/lib/league';
+import { withErrorHandler } from '@/lib/withErrorHandler';
+import { sessionSchema } from '@/lib/validation';
+import { sanitizeString } from '@/lib/utils';
+import { errorResponse, successResponse } from '@/lib/apiResponse';
+import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+function getUtcDateString(date: Date) {
+  return date.toISOString().split('T')[0];
+}
+
+function shouldRetryTransaction(error: unknown) {
+  return (
+    error instanceof Error &&
+    Array.isArray((error as any).errorLabels) &&
+    (error as any).errorLabels.includes('TransientTransactionError')
+  );
+}
+
 export async function POST(request: NextRequest) {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        errorResponse('UNAUTHORIZED', 'Unauthorized', 401),
+        { status: 401 }
+      );
     }
+
+    const body = await request.json();
+    const parsed = sessionSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        errorResponse('INVALID_INPUT', 'Session payload is invalid', 422, parsed.error.format()),
+        { status: 422 }
+      );
+    }
+
+    const now = new Date();
+    const todayKey = getUtcDateString(now);
+    const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+    const yesterdayKey = getUtcDateString(yesterday);
+
+    const sanitizedTitle = sanitizeString(parsed.data.problemTitle);
+    const sanitizedComments = parsed.data.comments ? sanitizeString(parsed.data.comments) : '';
+    const sanitizedProblemUrl = parsed.data.problemUrl || '';
 
     await connectDB();
 
-    const body = await request.json();
-    const { problemTitle, problemRating, laps, totalTime, comments, problemUrl } = body;
-    const problemName = problemTitle || '';
-    // ensure numeric values
-    const numericProblemRating = Number(problemRating) || 0;
-    const numericTotalTime = Number(totalTime) || 0;
+    const maxRetries = 3;
+    let attempt = 0;
 
-    // Calculate score based on problem rating and time
-    // Scoring System:
-    // - Base Score: problemRating * 3
-    // - Time Bonus: Up to 50 points for solving faster than expected time
-    //   * <1200 rating: expected 30 min
-    //   * 1200-1599: expected 45 min  
-    //   * 1600-1999: expected 60 min
-    //   * >=2000: expected 90 min
-    // - Streak Bonus: 5 points every 5 consecutive days
-    // - Minimum score: 10 points
-    let baseScore = numericProblemRating * 3; // Base points from rating
+    while (attempt < maxRetries) {
+      const transactionSession = await mongoose.startSession();
+      try {
+        transactionSession.startTransaction({ readConcern: { level: 'local' }, writeConcern: { w: 'majority' } });
 
-    // Time bonus calculation
-    let expectedTime = 1800; // 30 minutes default
-    if (numericProblemRating >= 2000) expectedTime = 5400; // 90 minutes
-    else if (numericProblemRating >= 1600) expectedTime = 3600; // 60 minutes
-    else if (numericProblemRating >= 1200) expectedTime = 2700; // 45 minutes
-
-    let timeBonus = 0;
-    if (numericTotalTime < expectedTime) {
-      timeBonus = Math.floor((expectedTime - numericTotalTime) / expectedTime * 50); // Up to 50 bonus points
-    }
-
-    const score = Math.max(baseScore + timeBonus, 10); // Minimum 10 points
-
-    // Find the user
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Calculate streak bonus using the user's last active day so repeated sessions
-    // on the same date do not reset or incorrectly increment the streak.
-    let streakBonus = 0;
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-
-    const lastSessionDate = user.lastSessionDate ? new Date(user.lastSessionDate) : null;
-    const lastSessionDay = lastSessionDate ? new Date(lastSessionDate) : null;
-
-    if (lastSessionDay) {
-      lastSessionDay.setHours(0, 0, 0, 0);
-    }
-
-    if (lastSessionDay && lastSessionDay.getTime() === todayStart.getTime()) {
-      streakBonus = Math.floor((user.currentStreak || 0) / 5) * 5;
-    } else if (lastSessionDay && lastSessionDay.getTime() === yesterdayStart.getTime()) {
-      user.currentStreak += 1;
-      streakBonus = Math.floor(user.currentStreak / 5) * 5;
-    } else {
-      user.currentStreak = 1;
-    }
-
-    if (user.currentStreak > user.maxStreak) {
-      user.maxStreak = user.currentStreak;
-    }
-
-    // Update user stats
-    user.totalScore += score + streakBonus;
-    user.totalSessions += 1;
-    user.lastSessionDate = now;
-
-    // Ensure usertag exists (for legacy users)
-    if (!user.usertag) {
-      user.usertag = generateUserTag();
-    }
-
-    user.rank = (await User.countDocuments({ totalScore: { $gt: user.totalScore } })) + 1;
-    user.league = getLeagueForScore(user.totalScore);
-
-    await user.save();
-
-    // Map laps from client shape to schema shape
-    const mappedLaps = (laps || []).map((lap: any) => ({
-      name: lap.name || 'Lap',
-      duration: typeof lap.time === 'number' ? lap.time : Number(lap.time) || 0,
-      comment: lap.comment || undefined,
-    }));
-
-    // Create session (fill required fields with safe defaults when missing)
-    const newSession = new Session({
-      user: user._id,
-      problemId: '',
-      problemName,
-      problemUrl: problemUrl || '',
-      problemRating: numericProblemRating,
-      problemTags: [],
-      laps: mappedLaps,
-      totalTime: numericTotalTime,
-      score: score + streakBonus,
-      streakBonus,
-      comments: comments || '',
-      codeforcesHandle: user.codeforcesHandle || ''
-    });
-
-    await newSession.save();
-
-    // Update user activity for heatmap
-    const activityDate = new Date();
-    activityDate.setHours(0, 0, 0, 0);
-    
-    await UserActivity.findOneAndUpdate(
-      { userId: user._id, date: activityDate },
-      {
-        $inc: { 
-          sessions: 1, 
-          totalTime: Math.floor(numericTotalTime / 60) // Convert to minutes
-        },
-        $set: { 
-          averageScore: score + streakBonus, // This will be updated with proper average later
-          topics: [problemName] // This could be expanded to track topics
+        const user = await User.findOne({ email: session.user.email }).session(transactionSession);
+        if (!user) {
+          await transactionSession.abortTransaction();
+          return NextResponse.json(
+            errorResponse('USER_NOT_FOUND', 'User not found', 404),
+            { status: 404 }
+          );
         }
-      },
-      { upsert: true, new: true }
-    );
 
-    return NextResponse.json({
-      message: 'Session saved successfully',
-      session: newSession,
-      scoreBreakdown: {
-        baseScore,
-        timeBonus,
-        streakBonus,
-        totalScore: score + streakBonus
+        const lastSessionKey = user.lastSessionDate ? getUtcDateString(new Date(user.lastSessionDate)) : null;
+        let currentStreak = 1;
+        if (lastSessionKey === todayKey) {
+          currentStreak = user.currentStreak || 1;
+        } else if (lastSessionKey === yesterdayKey) {
+          currentStreak = (user.currentStreak || 0) + 1;
+        }
+
+        const baseScore = parsed.data.problemRating * 3;
+        let expectedTime = 1800;
+        if (parsed.data.problemRating >= 2000) expectedTime = 5400;
+        else if (parsed.data.problemRating >= 1600) expectedTime = 3600;
+        else if (parsed.data.problemRating >= 1200) expectedTime = 2700;
+        const timeBonus = parsed.data.totalTime < expectedTime
+          ? Math.floor(((expectedTime - parsed.data.totalTime) / expectedTime) * 50)
+          : 0;
+        const streakBonus = Math.floor(currentStreak / 5) * 5;
+        const totalSessionScore = Math.max(baseScore + timeBonus, 10) + streakBonus;
+
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: user._id },
+          {
+            $set: {
+              currentStreak,
+              maxStreak: Math.max(user.maxStreak || 0, currentStreak),
+              lastSessionDate: now,
+              usertag: user.usertag || '',
+              league: getLeagueForScore(user.totalScore + totalSessionScore),
+              updatedAt: now,
+            },
+            $inc: {
+              totalScore: totalSessionScore,
+              totalSessions: 1,
+            },
+          },
+          { new: true, session: transactionSession }
+        );
+
+        if (!updatedUser) {
+          await transactionSession.abortTransaction();
+          throw new Error('Failed to update user stats');
+        }
+
+        const rank = (await User.countDocuments({ totalScore: { $gt: updatedUser.totalScore } }).session(transactionSession)) + 1;
+        await User.updateOne({ _id: user._id }, { $set: { rank } }, { session: transactionSession });
+
+        const sessionDoc = {
+          user: user._id,
+          problemId: '',
+          problemName: sanitizedTitle,
+          problemUrl: sanitizedProblemUrl,
+          problemRating: parsed.data.problemRating,
+          problemTags: [],
+          laps: parsed.data.laps.map((lap) => ({
+            name: sanitizeString(lap.name),
+            duration: lap.time,
+            comment: lap.comment ? sanitizeString(lap.comment) : undefined,
+          })),
+          totalTime: parsed.data.totalTime,
+          score: totalSessionScore,
+          streakBonus,
+          comments: sanitizedComments,
+          codeforcesHandle: updatedUser.codeforcesHandle || '',
+        };
+
+        const created = await Session.create([sessionDoc], { session: transactionSession });
+        const createdSession = created[0];
+
+        const activityDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        await UserActivity.findOneAndUpdate(
+          { userId: user._id, date: activityDate },
+          {
+            $inc: {
+              sessions: 1,
+              totalTime: Math.floor(parsed.data.totalTime / 60),
+            },
+            $set: {
+              averageScore: totalSessionScore,
+              topics: [sanitizedTitle],
+            },
+          },
+          { upsert: true, new: true, session: transactionSession }
+        );
+
+        await transactionSession.commitTransaction();
+
+        return NextResponse.json(
+          successResponse(
+            { session: createdSession, scoreBreakdown: {
+              baseScore,
+              timeBonus,
+              streakBonus,
+              totalScore: totalSessionScore,
+            } },
+            'Session saved successfully',
+            200
+          ),
+          { status: 200 }
+        );
+      } catch (error) {
+        if (transactionSession.inTransaction()) {
+          await transactionSession.abortTransaction();
+        }
+
+        if (shouldRetryTransaction(error) && attempt + 1 < maxRetries) {
+          attempt += 1;
+          continue;
+        }
+
+        console.error('Session save transaction failure:', error);
+        return NextResponse.json(
+          errorResponse('SESSION_SAVE_FAILED', 'Unable to save session', 500),
+          { status: 500 }
+        );
+      } finally {
+        transactionSession.endSession();
       }
-    });
+    }
 
-  } catch (error) {
-    console.error('Error saving session:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(
+      errorResponse('SESSION_SAVE_FAILED', 'Unable to save session', 500),
+      { status: 500 }
+    );
+  }, {
+    fallbackCode: 'SESSION_CREATION_FAILED',
+    fallbackMessage: 'Unable to save session',
+  });
 }
 
 export async function GET(request: NextRequest) {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        errorResponse('UNAUTHORIZED', 'Unauthorized', 401),
+        { status: 401 }
+      );
     }
 
     await connectDB();
-
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(
+        errorResponse('USER_NOT_FOUND', 'User not found', 404),
+        { status: 404 }
+      );
     }
 
     const sessions = await Session.find({ user: user._id })
       .sort({ createdAt: -1 })
       .limit(50);
 
-    return NextResponse.json(sessions);
-
-  } catch (error) {
-    console.error('Error fetching sessions:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(
+      successResponse({ sessions }, 'Sessions loaded', 200),
+      { status: 200 }
+    );
+  }, {
+    fallbackCode: 'SESSION_FETCH_FAILED',
+    fallbackMessage: 'Unable to fetch sessions',
+  });
 }

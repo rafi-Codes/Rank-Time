@@ -5,27 +5,27 @@ import { cn } from "@/lib/utils"
 
 /* ========== CARD VARIANTS ========== */
 const cardVariants = cva(
-  "rounded-xl text-card-foreground transition-all duration-200",
+  "rounded-[var(--radius-xl)] text-card-foreground transition-all duration-200",
   {
     variants: {
       variant: {
         /* Default glass effect */
-        default: "glass-panel glass-panel-hover bg-[var(--glass-bg)]",
+        default: "glass-tier-2 glass-interactive",
         
         /* Solid background */
         solid: "border border-border bg-card shadow-sm hover:shadow-md",
         
         /* Elevated appearance */
-        elevated: "border border-border/50 bg-card shadow-md hover:shadow-lg hover:-translate-y-0.5",
+        elevated: "glass-tier-3 hover:-translate-y-0.5 hover:border-primary/40",
         
         /* Ghost - minimal */
         ghost: "border border-border/30 bg-transparent hover:bg-muted/50",
         
         /* Outline - border focused */
-        outline: "border-2 border-border bg-background/50 hover:border-primary/50",
+        outline: "border border-border bg-background/50 hover:border-primary/50",
         
         /* Interactive - clickable */
-        interactive: "border border-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 cursor-pointer",
+        interactive: "glass-tier-2 glass-interactive cursor-pointer hover:-translate-y-1",
       },
       interactive: {
         true: "cursor-pointer hover:shadow-lg hover:-translate-y-1",

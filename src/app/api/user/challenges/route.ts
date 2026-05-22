@@ -7,6 +7,7 @@ import Badge from '@/models/Badge';
 import UserActivity from '@/models/UserActivity';
 import { generateChallengesForUser } from '@/lib/challenges';
 import User from '@/models/User';
+import { DEFAULT_BADGE_BY_ID } from '@/lib/badges';
 
 export async function GET(request: NextRequest) {
   try {
@@ -133,40 +134,90 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function utcDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function countConsecutiveDays(dates: Date[]) {
+  const completedDays = new Set(dates.map(utcDateKey));
+  let count = 0;
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+
+  while (completedDays.has(utcDateKey(cursor))) {
+    count += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  return count;
+}
+
+async function updateBadgeProgress(userId: string, badgeId: string, progress: number) {
+  const badge = DEFAULT_BADGE_BY_ID[badgeId];
+  if (!badge) return;
+
+  const earned = progress >= badge.target;
+  const insertBadge = {
+    ...badge,
+    userId,
+    ...(earned ? {} : { earned: false }),
+  };
+  const update = {
+    $set: {
+      progress,
+      ...(earned ? { earned: true, earnedAt: new Date() } : {}),
+    },
+    $setOnInsert: insertBadge,
+  };
+
+  await Badge.findOneAndUpdate(
+    { userId, badgeId },
+    update,
+    { upsert: true }
+  );
+}
+
 async function checkAndAwardBadges(userId: string, challenge: any) {
   try {
-    const recentChallenges = await Challenge.find({
+    const completedChallenges = await Challenge.find({
       userId,
       completed: true,
-      completedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-    }).sort({ completedAt: -1 });
+      completedAt: { $exists: true },
+    }).select('completedAt difficulty topics').sort({ completedAt: -1 });
 
-    const streakCount = recentChallenges.length;
+    const completedCount = completedChallenges.length;
+    await updateBadgeProgress(userId, 'first_steps', completedCount);
+    await updateBadgeProgress(userId, 'problem_solver', completedCount);
+    await updateBadgeProgress(userId, 'master_coder', completedCount);
 
-    if (streakCount >= 7) {
-      await Badge.findOneAndUpdate(
-        { userId, badgeId: 'week_streak' },
-        { earned: true, earnedAt: new Date(), progress: streakCount },
-        { upsert: true }
-      );
-    }
+    const completedDates = completedChallenges
+      .map((completedChallenge) => completedChallenge.completedAt)
+      .filter((completedAt): completedAt is Date => completedAt instanceof Date);
+    const streakCount = countConsecutiveDays(completedDates);
+    await updateBadgeProgress(userId, 'week_streak', streakCount);
+    await updateBadgeProgress(userId, 'month_streak', streakCount);
 
-    if (challenge.difficulty === 'hard' && challenge.completed) {
-      await Badge.findOneAndUpdate(
-        { userId, badgeId: 'hard_challenge_master' },
-        { earned: true, earnedAt: new Date(), progress: 1 },
-        { upsert: true }
-      );
-    }
+    const hardChallengeCount = completedChallenges.filter((completedChallenge) => completedChallenge.difficulty === 'hard').length;
+    await updateBadgeProgress(userId, 'hard_challenge_master', hardChallengeCount);
 
-    const categoryChallenges = await Challenge.find({ userId, category: challenge.category, completed: true });
-    if (categoryChallenges.length >= 10) {
-      await Badge.findOneAndUpdate(
-        { userId, badgeId: `${challenge.category}_specialist` },
-        { earned: true, earnedAt: new Date(), progress: categoryChallenges.length },
-        { upsert: true }
-      );
-    }
+    const hasTopic = (topics: string[] | undefined, aliases: string[]) =>
+      Array.isArray(topics) && topics.some((topic) => aliases.includes(topic.toLowerCase()));
+
+    await updateBadgeProgress(
+      userId,
+      'array_specialist',
+      completedChallenges.filter((completedChallenge) => hasTopic(completedChallenge.topics, ['array', 'arrays', 'string', 'strings'])).length
+    );
+    await updateBadgeProgress(
+      userId,
+      'graph_specialist',
+      completedChallenges.filter((completedChallenge) => hasTopic(completedChallenge.topics, ['graph', 'graphs', 'tree', 'trees'])).length
+    );
+    await updateBadgeProgress(
+      userId,
+      'dynamic_programming_specialist',
+      completedChallenges.filter((completedChallenge) => hasTopic(completedChallenge.topics, ['dynamic programming', 'dp'])).length
+    );
   } catch (error) {
     console.error('Error checking badges:', error);
   }

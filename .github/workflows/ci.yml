@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Run lint
+        run: npm run lint
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+      - name: Build app
+        run: npm run build
+      - name: Start app
+        run: |
+          nohup npm run start &
+          # wait for server to be ready
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3000/api/health >/dev/null; then
+              echo "server up" && break
+            fi
+            sleep 1
+          done
+      - name: Run health & AI tests
+        env:
+          BASE_URL: http://localhost:3000
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+        run: node test/test-health-ai.js

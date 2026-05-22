@@ -2,7 +2,9 @@ import Challenge from '@/models/Challenge';
 import Badge from '@/models/Badge';
 import UserActivity from '@/models/UserActivity';
 import Session from '@/models/Session';
-import { OpenRouter } from '@openrouter/sdk';
+import User from '@/models/User';
+import { callOpenRouterChat } from '@/lib/openRouterClient';
+import { challengeSchema } from '@/lib/validation';
 
 export const pointsFor = (difficulty: string, isWeekly = false) => {
   if (difficulty === 'easy') return isWeekly ? 5 : 2;
@@ -14,16 +16,12 @@ async function generateAIWeeklyChallenges(userId: any) {
   try {
     console.log('Starting AI weekly challenge generation for user:', userId);
 
-    // Get user data for personalization
-    const user = await require('@/models/User').default.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       console.log('User not found, using fallback');
       return getFallbackWeeklyChallenges();
     }
 
-    console.log('User found:', user.name, 'League:', user.league);
-
-    // Get recent activities and sessions
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -37,12 +35,8 @@ async function generateAIWeeklyChallenges(userId: any) {
       createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 }).limit(10);
 
-    const earnedBadges = await Badge.find({
-      userId,
-      earned: true
-    });
+    const earnedBadges = await Badge.find({ userId, earned: true });
 
-    // Get challenge completion stats
     const challengeStats = await Challenge.aggregate([
       { $match: { userId, type: 'weekly' } },
       {
@@ -57,15 +51,9 @@ async function generateAIWeeklyChallenges(userId: any) {
       }
     ]);
 
-    // Initialize OpenRouter
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
-
-    // Prepare user data for AI
     const userData = {
       name: user.name || 'User',
-      league: user.league || 'Beginner',
+      league: user.league || 'bronze',
       totalScore: user.totalScore || 0,
       currentStreak: user.currentStreak || 0,
       maxStreak: user.maxStreak || 0,
@@ -77,7 +65,6 @@ async function generateAIWeeklyChallenges(userId: any) {
       sessions: recentSessions.slice(0, 5).map(s => ({
         date: s.createdAt,
         duration: s.totalTime || 0,
-        problemsSolved: s.problemsSolved?.length || 0,
         rating: s.problemRating || 0,
         score: s.score || 0
       })),
@@ -91,107 +78,71 @@ async function generateAIWeeklyChallenges(userId: any) {
       }
     };
 
-    // Create AI prompt for weekly challenges
     const prompt = `
-You are an expert competitive programming coach creating personalized weekly challenges.
+You are a competitive programming coach generating personalized weekly challenges.
 
 User Profile:
 ${JSON.stringify(userData, null, 2)}
 
-Generate 3 personalized weekly challenges that will help this user improve. Each challenge should:
+Create exactly 3 weekly challenges for this user. Each challenge should:
+1. Be achievable within one week
+2. Build on the user's current strengths and growth areas
+3. Include a measurable goal
+4. Cover different aspects of competitive programming
+5. Use difficulty levels appropriate to the user's current league
 
-1. **Be achievable within 1 week** but challenging enough to promote growth
-2. **Build on their current skills and weaknesses**
-3. **Include specific, measurable goals**
-4. **Cover different aspects**: problem-solving, consistency, difficulty progression, or learning new topics
-5. **Have appropriate difficulty levels** based on their current league and performance
-
-Return exactly 3 challenges in this JSON format:
+Return only valid JSON in this format:
 [
   {
-    "title": "Challenge Title (max 50 chars)",
-    "description": "Detailed description of what to do (max 200 chars)",
-    "difficulty": "easy" | "medium" | "hard",
-    "topics": ["topic1", "topic2"],
-    "bonusPoints": number (5-20 based on difficulty),
-    "category": "algorithms" | "data-structures" | "consistency" | "difficulty" | "practice" | "learning"
+    "title": "...",
+    "description": "...",
+    "difficulty": "easy|medium|hard",
+    "topics": ["..."],
+    "bonusPoints": 5,
+    "category": "algorithms|data-structures|consistency|difficulty|practice|learning"
   }
 ]
-
-Consider their league level (${userData.league}) and recent performance when setting difficulty and goals.
 `;
 
-    const completion = await openRouter.chat.send({
+    const completion = await callOpenRouterChat({
       model: 'anthropic/claude-3-haiku',
       messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      maxTokens: 1000
+      maxTokens: 1000,
     });
 
-    const response = completion.choices[0]?.message?.content;
+    const response = completion?.response;
     if (!response || typeof response !== 'string') {
-      console.log('No valid AI response received');
-      throw new Error('No valid response from AI');
+      throw new Error('Invalid AI response');
     }
-
-    console.log('AI response received, parsing...');
-
-    // Parse and validate the response
-    let challenges;
-    try {
-      // Extract JSON from response (AI might add extra text)
-      const jsonMatch = response.match(/\[[\s\S]*\]/);
-      const jsonString = jsonMatch ? jsonMatch[0] : response;
-      challenges = JSON.parse(jsonString);
-
-      if (!Array.isArray(challenges) || challenges.length !== 3) {
-        throw new Error('Invalid challenge format');
-      }
-
-      // Validate each challenge
-      challenges.forEach((challenge: any, index: number) => {
-        if (!challenge.title || !challenge.description || !challenge.difficulty ||
-            !challenge.topics || !Array.isArray(challenge.topics) ||
-            typeof challenge.bonusPoints !== 'number') {
-          throw new Error(`Invalid challenge ${index + 1} format`);
-        }
-
-        // Ensure valid difficulty
-        if (!['easy', 'medium', 'hard'].includes(challenge.difficulty)) {
-          challenge.difficulty = 'medium';
-        }
-
-        // Ensure valid category
-        const validCategories = ['algorithms', 'data-structures', 'consistency', 'difficulty', 'practice', 'learning'];
-        if (!validCategories.includes(challenge.category)) {
-          challenge.category = 'practice';
-        }
-
-        // Ensure reasonable bonus points
-        if (challenge.bonusPoints < 5 || challenge.bonusPoints > 20) {
-          challenge.bonusPoints = pointsFor(challenge.difficulty, true) * 0.5;
-        }
-      });
-
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', response);
-      // Fallback to default challenges if AI fails
-      console.log('Using fallback challenges due to parse error');
+    if (completion.provider === 'fallback') {
+      console.warn('OpenRouter fallback returned for challenge generation');
       return getFallbackWeeklyChallenges();
     }
 
-    console.log('Successfully generated', challenges.length, 'AI challenges');
-    return challenges;
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    const jsonString = jsonMatch ? jsonMatch[0] : response;
+    const rawChallenges = JSON.parse(jsonString) as any[];
+    if (!Array.isArray(rawChallenges) || rawChallenges.length !== 3) {
+      throw new Error('AI did not return exactly 3 challenges');
+    }
 
+    const validatedChallenges = rawChallenges.map((challenge, index) => {
+      const parsed = challengeSchema.safeParse({
+        ...challenge,
+        deadline: challenge.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+      if (!parsed.success) {
+        throw new Error(`Challenge validation failed at index ${index}: ${JSON.stringify(parsed.error.format())}`);
+      }
+      return parsed.data;
+    });
+
+    return validatedChallenges;
   } catch (error) {
     console.error('Error generating AI weekly challenges:', error);
-    // Return fallback challenges if AI generation fails
-    console.log('Using fallback challenges due to error');
     return getFallbackWeeklyChallenges();
   }
 }
@@ -225,48 +176,45 @@ function getFallbackWeeklyChallenges() {
   ];
 }
 
-export async function generateChallengesForUser(userId: any, options: { daily?: boolean; weekly?: boolean } = { daily: true, weekly: true }) {
+export async function generateChallengesForUser(userId: any, options: { daily?: boolean; weekly?: boolean; idempotencyKey?: string } = { daily: true, weekly: true }) {
   try {
     const now = new Date();
 
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const endOfWeek = new Date(now);
-    const daysUntilSunday = 7 - now.getDay();
-    endOfWeek.setDate(now.getDate() + daysUntilSunday);
-    endOfWeek.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const endOfWeek = new Date(endOfDay);
+    const daysUntilSunday = 7 - endOfWeek.getUTCDay();
+    endOfWeek.setUTCDate(endOfWeek.getUTCDate() + daysUntilSunday);
 
     const dailyChallenges = [
       {
-        title: "Solve 3 Easy Problems",
-        description: "Complete 3 easy-rated coding problems today",
-        type: "daily",
-        difficulty: "easy",
-        topics: ["implementation", "math"],
-        bonusPoints: 2,
-        deadline: endOfDay,
-        category: "problem-solving"
-      },
-      {
-        title: "Practice Arrays & Strings",
-        description: "Solve 2 problems involving arrays or strings",
-        type: "daily",
-        difficulty: "easy",
-        topics: ["arrays", "strings"],
-        bonusPoints: 3,
-        deadline: endOfDay,
-        category: "data-structures"
-      },
-      {
-        title: "Time Management Challenge",
-        description: "Solve a problem in under 30 minutes",
-        type: "daily",
-        difficulty: "medium",
-        topics: ["optimization", "algorithms"],
+        title: 'Solve 3 Easy Problems',
+        description: 'Complete 3 easy-rated coding problems today',
+        type: 'daily',
+        difficulty: 'easy',
+        topics: ['implementation', 'math'],
         bonusPoints: 5,
         deadline: endOfDay,
-        category: "efficiency"
+        category: 'practice',
+      },
+      {
+        title: 'Practice Arrays & Strings',
+        description: 'Solve 2 problems involving arrays or strings',
+        type: 'daily',
+        difficulty: 'easy',
+        topics: ['arrays', 'strings'],
+        bonusPoints: 5,
+        deadline: endOfDay,
+        category: 'data-structures',
+      },
+      {
+        title: 'Time Management Challenge',
+        description: 'Solve a problem in under 30 minutes',
+        type: 'daily',
+        difficulty: 'medium',
+        topics: ['optimization', 'algorithms'],
+        bonusPoints: 10,
+        deadline: endOfDay,
+        category: 'difficulty',
       }
     ];
 
@@ -274,11 +222,22 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
       const existingDaily = await Challenge.findOne({ userId, type: 'daily', deadline: { $gte: now }, completed: false });
       if (!existingDaily) {
         for (const challengeData of dailyChallenges) {
-          await Challenge.create({
-            userId,
-            ...challengeData,
-            points: pointsFor(String((challengeData as any).difficulty), false)
-          });
+          await Challenge.updateOne(
+            {
+              userId,
+              type: challengeData.type,
+              title: challengeData.title,
+              deadline: challengeData.deadline,
+            },
+            {
+              $setOnInsert: {
+                userId,
+                ...challengeData,
+                points: pointsFor(challengeData.difficulty, false),
+              },
+            },
+            { upsert: true }
+          );
         }
       }
     }
@@ -286,17 +245,36 @@ export async function generateChallengesForUser(userId: any, options: { daily?: 
     if (options.weekly) {
       const existingWeekly = await Challenge.findOne({ userId, type: 'weekly', deadline: { $gte: now }, completed: false });
       if (!existingWeekly) {
-        // Generate AI-powered weekly challenges
         const weeklyChallenges = await generateAIWeeklyChallenges(userId);
+        const batchKey = options.idempotencyKey || `weekly-${endOfWeek.toISOString()}`;
 
         for (const challengeData of weeklyChallenges) {
-          await Challenge.create({
-            userId,
+          const validated = challengeSchema.safeParse({
             ...challengeData,
             type: 'weekly',
             deadline: endOfWeek,
-            points: pointsFor(String(challengeData.difficulty), true)
           });
+          if (!validated.success) {
+            console.warn('Skipping invalid AI challenge', validated.error.format());
+            continue;
+          }
+
+          const filter = options.idempotencyKey
+            ? { userId, idempotencyKey: batchKey, type: 'weekly', title: validated.data.title }
+            : { userId, type: 'weekly', title: validated.data.title, deadline: endOfWeek };
+
+          await Challenge.updateOne(
+            filter,
+            {
+              $setOnInsert: {
+                userId,
+                ...validated.data,
+                points: pointsFor(validated.data.difficulty, true),
+                idempotencyKey: batchKey,
+              },
+            },
+            { upsert: true }
+          );
         }
       }
     }
