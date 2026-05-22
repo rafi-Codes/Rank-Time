@@ -16,6 +16,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/brand-logo';
 import { ModeToggle } from '@/components/mode-toggle';
 
 const features = [
@@ -66,14 +67,14 @@ const activity = [
 
 export default function Home() {
   return (
-    <main className="premium-shell page-enter min-h-screen overflow-hidden">
+    <main className="premium-shell page-enter min-h-screen overflow-x-hidden">
       <div className="premium-grid pointer-events-none fixed inset-x-0 top-0 h-[70vh]" aria-hidden="true" />
 
       <header className="glass-tier-4 sticky top-0 z-40 border-x-0 border-t-0">
-        <div className="container flex h-16 items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3" aria-label="Rank Time home">
-            <img src="/logo.svg" alt="" className="h-9 w-9" />
-            <span className="brand-gradient text-lg font-bold sm:text-xl">Rank Time</span>
+        <div className="container flex min-h-16 flex-wrap items-center justify-between gap-3 py-2">
+          <Link href="/" className="flex min-w-0 max-w-[min(100%,14rem)] items-center gap-3 rounded-[var(--radius-lg)] border border-border/70 bg-background/70 px-2 py-1 shadow-sm backdrop-blur-sm sm:max-w-none" aria-label="Rank Time home">
+            <BrandLogo className="h-9 w-9" alt="" />
+            <span className="brand-gradient truncate text-lg font-bold sm:text-xl">Rank Time</span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
@@ -88,7 +89,7 @@ export default function Home() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             <ModeToggle />
             <Button variant="ghost" className="hidden sm:inline-flex" asChild>
               <Link href="/login">Login</Link>
@@ -152,7 +153,7 @@ export default function Home() {
               <div className="overflow-hidden rounded-[calc(var(--radius-3xl)-0.35rem)] border border-[var(--glass-premium-border)] bg-background/35">
                 <div className="flex items-center justify-between border-b border-[var(--glass-premium-border)] px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <img src="/logo.svg" alt="" className="h-8 w-8" />
+                    <BrandLogo className="h-8 w-8" alt="" />
                     <div>
                       <p className="text-sm font-bold text-foreground">Practice Console</p>
                       <p className="text-xs text-muted-foreground">Live session summary</p>

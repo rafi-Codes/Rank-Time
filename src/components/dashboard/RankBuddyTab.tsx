@@ -412,7 +412,7 @@ export default function RankBuddyTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Bot className="h-6 w-6 text-blue-600" />
+            <Bot className="h-6 w-6 text-primary" />
             <span>Chat with Rank Buddy</span>
           </CardTitle>
           <CardDescription>
@@ -420,23 +420,24 @@ export default function RankBuddyTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-96 overflow-y-auto border rounded-lg p-4 space-y-4 mb-4">
+          <div className="mb-4 h-96 space-y-4 overflow-y-auto rounded-lg border border-border bg-muted/30 p-4">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                <div className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
                   message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border bg-card text-card-foreground shadow-sm'
                 }`}>
-                  <p className="text-sm">{message.content}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs opacity-70">
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className={`text-xs ${message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </p>
                     {message.role === 'assistant' && message.provider && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        message.provider === 'replicate' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      <span className={`rounded px-1.5 py-0.5 text-xs ${
+                        message.provider === 'replicate'
+                          ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-muted text-muted-foreground'
                       }`}>
                         {message.provider === 'replicate' ? 'Replicate' :
                          message.fallback ? 'Basic' : 'AI'}
@@ -448,11 +449,11 @@ export default function RankBuddyTab() {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
+                <div className="rounded-lg border border-border bg-card px-4 py-2">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]"></div>
                   </div>
                 </div>
               </div>
