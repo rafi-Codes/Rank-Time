@@ -69,6 +69,7 @@ export default function CodeforcesTab() {
     if (storedHandle) {
       setConnectedHandle(storedHandle);
       setHandle(storedHandle);
+      setIsConnected(true);
     }
   }, []);
 
