@@ -19,6 +19,7 @@ import {
   BarChart,
   Bar
 } from 'recharts';
+import { unwrapApiList } from '@/lib/parseApiResponse';
 
 interface SessionData {
   date: string;
@@ -38,7 +39,7 @@ export default function GraphsTab() {
       const response = await fetch(`/api/sessions/graph?days=${timeRange}`);
       if (response.ok) {
         const graphData = await response.json();
-        setData(graphData);
+        setData(unwrapApiList<SessionData>(graphData, ['sessions', 'graphData', 'data']));
       }
     } catch (error) {
       console.error('Error fetching graph data:', error);

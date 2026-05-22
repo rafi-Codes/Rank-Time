@@ -38,7 +38,7 @@ const buttonVariants = cva(
       variant: {
         /* Primary - Main CTA */
         default:
-          "relative overflow-hidden border border-transparent bg-[var(--gradient-cyan-primary)] text-[#FFFFFF] shadow-[var(--shadow-cyan-sm)] before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(0,0,0,0.05))] hover:-translate-y-0.5 hover:shadow-[var(--shadow-cyan-md)] active:translate-y-0 active:shadow-[var(--shadow-cyan-sm)]",
+          "isolate relative overflow-hidden border border-transparent bg-cyan-500 [background:var(--gradient-cyan-primary)] text-white shadow-[var(--shadow-cyan-sm)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(0,0,0,0.05))] hover:-translate-y-0.5 hover:shadow-[var(--shadow-cyan-md)] active:translate-y-0 active:shadow-[var(--shadow-cyan-sm)] [&>*]:relative [&>*]:z-[1]",
         
         /* Secondary - Alternative action */
         secondary:
@@ -120,6 +120,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     const isDisabled = disabled || isLoading
 
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          aria-disabled={isDisabled || undefined}
+          aria-busy={isLoading || undefined}
+          {...props}
+        >
+          {children}
+        </Comp>
+      )
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -129,22 +143,22 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}
       >
-        {/* Loading state */}
         {isLoading ? (
           <>
-            <LoadingSpinner />
-            <span>{loadingText || children}</span>
+            <span className="relative z-[1]">
+              <LoadingSpinner />
+            </span>
+            <span className="relative z-[1]">{loadingText || children}</span>
           </>
         ) : (
           <>
-            {/* Icon left position */}
-            {icon && iconPosition === "left" && <span>{icon}</span>}
-            
-            {/* Content */}
-            <span>{children}</span>
-            
-            {/* Icon right position */}
-            {icon && iconPosition === "right" && <span>{icon}</span>}
+            {icon && iconPosition === "left" && (
+              <span className="relative z-[1] shrink-0">{icon}</span>
+            )}
+            <span className="relative z-[1]">{children}</span>
+            {icon && iconPosition === "right" && (
+              <span className="relative z-[1] shrink-0">{icon}</span>
+            )}
           </>
         )}
       </Comp>

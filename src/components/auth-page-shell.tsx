@@ -25,7 +25,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
       </header>
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
-        <div className="w-full max-w-[26rem] sm:max-w-md">{children}</div>
+        <div className="w-full max-w-md">{children}</div>
       </main>
 
       <footer className="relative z-10 shrink-0 border-t border-border/60 bg-background/40 px-4 py-5 text-center text-sm text-muted-foreground backdrop-blur-sm">

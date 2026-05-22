@@ -136,39 +136,39 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="stopwatch">
-            <StopwatchTab />
+            {activeTab === 'stopwatch' ? <StopwatchTab /> : null}
           </TabsContent>
 
           <TabsContent value="timer">
-            <TimerTab />
+            {activeTab === 'timer' ? <TimerTab /> : null}
           </TabsContent>
 
           <TabsContent value="tracksheet">
-            <TracksheetTab />
+            {activeTab === 'tracksheet' ? <TracksheetTab /> : null}
           </TabsContent>
 
           <TabsContent value="profile">
-            <ProfileTab />
+            {activeTab === 'profile' ? <ProfileTab /> : null}
           </TabsContent>
 
           <TabsContent value="graphs">
-            <GraphsTab />
+            {activeTab === 'graphs' ? <GraphsTab /> : null}
           </TabsContent>
 
           <TabsContent value="leaderboard">
-            <LeaderboardTab />
+            {activeTab === 'leaderboard' ? <LeaderboardTab /> : null}
           </TabsContent>
 
           <TabsContent value="rankbuddy">
-            <RankBuddyTab />
+            {activeTab === 'rankbuddy' ? <RankBuddyTab /> : null}
           </TabsContent>
 
           <TabsContent value="codeforces">
-            <CodeforcesTab />
+            {activeTab === 'codeforces' ? <CodeforcesTab /> : null}
           </TabsContent>
 
           <TabsContent value="social">
-            <SocialTab />
+            {activeTab === 'social' ? <SocialTab /> : null}
           </TabsContent>
         </Tabs>
 

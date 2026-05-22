@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, UserMinus, Users, Trophy } from 'lucide-react';
 import { getLeagueLabel } from '@/lib/league';
+import { unwrapApiList } from '@/lib/parseApiResponse';
 
 interface User {
   _id: string;
@@ -36,7 +37,7 @@ export default function SocialTab() {
       const response = await fetch('/api/users/following');
       if (response.ok) {
         const data = await response.json();
-        setFollowing(data.following);
+        setFollowing(unwrapApiList<User>(data, ['following']));
       }
     } catch (error) {
       console.error('Failed to load following list:', error);
@@ -51,7 +52,7 @@ export default function SocialTab() {
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
       if (response.ok) {
         const data = await response.json();
-        setSearchResults(data.users);
+        setSearchResults(unwrapApiList<User>(data, ['users']));
       } else {
         setSearchResults([]);
       }

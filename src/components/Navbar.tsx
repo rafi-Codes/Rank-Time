@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { BrandLogo } from '@/components/brand-logo';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export type NavLinkItem = {
@@ -206,7 +206,7 @@ export default function Navbar({
     <>
       <header
         className={cn(
-          'nav-floating fixed left-1/2 top-4 z-[9999] w-[calc(100%-2rem)] max-w-[820px] -translate-x-1/2 rounded-full px-4 py-3 sm:px-6',
+          'nav-floating fixed left-1/2 top-4 z-[9999] w-[calc(100%-2rem)] max-w-[920px] -translate-x-1/2 rounded-full px-4 py-3 sm:px-6',
           'nav-enter flex items-center justify-between gap-3',
           scrolled && 'nav-floating-scrolled'
         )}
@@ -242,7 +242,7 @@ export default function Navbar({
         </nav>
 
         {/* Desktop actions */}
-        <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+        <div className="hidden shrink-0 items-center gap-2 md:flex">
           {variant === 'minimal' && minimalAction}
 
           {isDashboard && user && (
@@ -306,17 +306,27 @@ export default function Navbar({
           <ThemeToggleButton />
 
           {variant === 'marketing' && (
-            <>
-              <Button variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button size="sm" className="rounded-full" asChild>
-                <Link href="/register">
-                  Start
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </Button>
-            </>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  'hidden shrink-0 whitespace-nowrap rounded-full sm:inline-flex'
+                )}
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className={cn(
+                  buttonVariants({ size: 'sm' }),
+                  'inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full'
+                )}
+              >
+                Start
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </Link>
+            </div>
           )}
 
           {isDashboard && (
@@ -464,17 +474,27 @@ export default function Navbar({
               className="nav-drawer-item mt-4 flex flex-col gap-2 border-t border-[var(--nav-glass-border)] pt-4"
               style={{ animationDelay: `${(links.length + 1) * 50}ms` }}
             >
-              <Button variant="outline" className="w-full rounded-full" asChild>
-                <Link href="/login" onClick={closeMobile}>
-                  Login
-                </Link>
-              </Button>
-              <Button className="w-full rounded-full" asChild>
-                <Link href="/register" onClick={closeMobile}>
-                  Start
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <Link
+                href="/login"
+                onClick={closeMobile}
+                className={cn(
+                  buttonVariants({ variant: 'outline', size: 'default' }),
+                  'inline-flex w-full items-center justify-center whitespace-nowrap rounded-full'
+                )}
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                onClick={closeMobile}
+                className={cn(
+                  buttonVariants({ size: 'default' }),
+                  'inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full'
+                )}
+              >
+                Start
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </Link>
             </div>
           )}
 

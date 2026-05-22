@@ -100,12 +100,7 @@ export function SocialAuthButtons({
         </Alert>
       ) : null}
 
-      <div
-        className={cn(
-          'grid gap-3',
-          providersReady ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
-        )}
-      >
+      <div className="flex flex-col gap-3">
         {(['google', 'github'] as const).map((provider) => {
           const isAvailable = availableProviders[provider];
           const isLoading = socialLoading === provider;
@@ -120,7 +115,7 @@ export function SocialAuthButtons({
               variant="outline"
               size="lg"
               className={cn(
-                'h-11 w-full justify-center gap-2.5 border-border/80 bg-background/80',
+                'h-12 w-full min-h-12 justify-center gap-3 border-border/80 bg-background px-5 text-sm font-semibold sm:text-base',
                 !isAvailable && providersReady && 'opacity-70'
               )}
               icon={provider === 'google' ? <GoogleIcon /> : <GitHubIcon />}
@@ -128,7 +123,7 @@ export function SocialAuthButtons({
               loadingText="Connecting..."
               aria-label={label}
             >
-              <span className="truncate">{label}</span>
+              {label}
             </Button>
           );
         })}

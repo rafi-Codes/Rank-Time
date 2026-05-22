@@ -88,17 +88,17 @@ export default function Home() {
               A focused practice cockpit for timing sessions, reviewing performance, earning badges, and improving with data-driven coaching.
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button size="lg" asChild>
                 <Link href="/register">
-                  Get Started Free
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  <span>Get Started Free</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link href="/login">
-                  <Play className="h-4 w-4" aria-hidden="true" />
-                  View Dashboard
+                <Link href="/dashboard">
+                  <Play className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>View Dashboard</span>
                 </Link>
               </Button>
             </div>
@@ -150,7 +150,7 @@ export default function Home() {
                         {[34, 58, 46, 72, 64, 88, 78, 96].map((height, index) => (
                           <span
                             key={height + index}
-                            className="w-full rounded-full bg-[var(--gradient-cyan-primary)]"
+                            className="w-full rounded-full bg-cyan-500 [background:var(--gradient-cyan-primary)]"
                             style={{ height: `${height}%` }}
                           />
                         ))}
@@ -220,7 +220,7 @@ export default function Home() {
                   key={feature.title}
                   className={`glass-tier-2 glass-interactive scroll-reveal stagger-${Math.min(index % 3, 2) + 1} min-w-[280px] snap-start rounded-[var(--radius-xl)] p-6`}
                 >
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--gradient-cyan-primary)] text-white shadow-[var(--shadow-cyan-sm)]">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-cyan-500 [background:var(--gradient-cyan-primary)] text-white shadow-[var(--shadow-cyan-sm)]">
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <h3 className="text-xl font-bold text-foreground">{feature.title}</h3>
@@ -277,8 +277,8 @@ export default function Home() {
             </div>
             <Button size="lg" asChild>
               <Link href="/register">
-                Start Practicing
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                <span>Start Practicing</span>
+                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
               </Link>
             </Button>
           </div>

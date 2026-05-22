@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, Clock, Trophy, Target, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import ExcelJS from 'exceljs';
+import { unwrapApiList } from '@/lib/parseApiResponse';
 
 interface Session {
   _id: string;
@@ -40,7 +41,7 @@ export default function TracksheetTab() {
       const response = await fetch('/api/sessions');
       if (response.ok) {
         const data = await response.json();
-        setSessions(Array.isArray(data) ? data : data?.data || []);
+        setSessions(unwrapApiList<Session>(data, ['sessions']));
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);

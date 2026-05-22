@@ -25,6 +25,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { unwrapApiData, unwrapApiList } from '@/lib/parseApiResponse';
 
 interface HeatmapData {
   date: string;
@@ -214,8 +215,23 @@ export default function RankBuddyTab() {
       const heatmapResponse = await fetch('/api/user/activity-heatmap');
       if (heatmapResponse.ok) {
         const heatmapResult = await heatmapResponse.json();
-        setHeatmapData(heatmapResult.heatmapData);
-        setHeatmapStats(heatmapResult.statistics);
+        const heatmapPayload = unwrapApiData<{
+          heatmapData?: HeatmapData[];
+          statistics?: unknown;
+        }>(heatmapResult);
+        const heatmapRecord =
+          heatmapPayload && typeof heatmapPayload === 'object'
+            ? (heatmapPayload as { heatmapData?: HeatmapData[]; statistics?: unknown })
+            : typeof heatmapResult === 'object' && heatmapResult !== null
+              ? (heatmapResult as { heatmapData?: HeatmapData[]; statistics?: unknown })
+              : null;
+
+        setHeatmapData(
+          Array.isArray(heatmapRecord?.heatmapData)
+            ? heatmapRecord.heatmapData
+            : unwrapApiList<HeatmapData>(heatmapResult, ['heatmapData'])
+        );
+        setHeatmapStats(heatmapRecord?.statistics ?? null);
       }
 
       // Load improvement path
@@ -252,12 +268,13 @@ export default function RankBuddyTab() {
       // Load all challenges (daily and weekly)
       const response = await fetch('/api/user/challenges?type=all');
       if (response.ok) {
-        const data: { challenges: any[] } = await response.json();
-        console.log('Loaded challenges:', data.challenges.length, 'total');
-        const weeklyCount = data.challenges.filter((c: any) => c.type === 'weekly').length;
-        const dailyCount = data.challenges.filter((c: any) => c.type === 'daily').length;
+        const data = await response.json();
+        const challengeList = unwrapApiList<Challenge>(data, ['challenges']);
+        console.log('Loaded challenges:', challengeList.length, 'total');
+        const weeklyCount = challengeList.filter((c) => c.type === 'weekly').length;
+        const dailyCount = challengeList.filter((c) => c.type === 'daily').length;
         console.log(`Daily: ${dailyCount}, Weekly: ${weeklyCount}`);
-        setChallenges(data.challenges);
+        setChallenges(challengeList);
 
         // If no weekly challenges, try to generate them
         if (weeklyCount === 0) {
@@ -276,7 +293,7 @@ export default function RankBuddyTab() {
       const response = await fetch('/api/user/badges');
       if (response.ok) {
         const data = await response.json();
-        setBadges(data.badges);
+        setBadges(unwrapApiList<BadgeData>(data, ['badges']));
       }
     } catch (error) {
       console.error('Error loading badges:', error);
@@ -288,7 +305,7 @@ export default function RankBuddyTab() {
       const response = await fetch('/api/sessions');
       if (response.ok) {
         const data = await response.json();
-        setSessions(data || []);
+        setSessions(unwrapApiList<SessionData>(data, ['sessions']));
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
