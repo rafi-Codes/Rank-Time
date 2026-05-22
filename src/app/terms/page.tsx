@@ -2,41 +2,15 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import Navbar from '@/components/Navbar';
+import { termsNavLinks } from '@/components/navbar-config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Users, Shield, AlertTriangle, Scale } from 'lucide-react';
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="flex items-center space-x-2 cursor-pointer">
-              <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">RankTime</h1>
-            </Link>
-            <div className="flex space-x-4">
-              <Link href="/contact">
-                <Button variant="outline" size="sm">
-                  Contact
-                </Button>
-              </Link>
-              <Link href="/privacy">
-                <Button variant="outline" size="sm">
-                  Privacy
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" size="sm">
-                  Dashboard
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar variant="minimal" logoHref="/dashboard" links={termsNavLinks} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

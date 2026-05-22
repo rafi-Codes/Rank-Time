@@ -194,6 +194,12 @@
     --input: 220 13% 82%;
     --ring: 187 100% 50%;
     --radius: 1rem;
+
+    /* Floating navbar */
+    --nav-glass-bg: rgba(255, 255, 255, 0.15);
+    --nav-glass-border: rgba(255, 255, 255, 0.2);
+    --nav-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --nav-shadow-scrolled: 0 12px 40px rgba(0, 0, 0, 0.18);
   }
 
   .dark,
@@ -276,6 +282,11 @@
     --border: 217 21% 28%;
     --input: 217 21% 28%;
     --ring: 187 100% 50%;
+
+    --nav-glass-bg: rgba(15, 15, 15, 0.5);
+    --nav-glass-border: rgba(255, 255, 255, 0.08);
+    --nav-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --nav-shadow-scrolled: 0 14px 44px rgba(0, 0, 0, 0.5);
   }
 
   * {
@@ -794,5 +805,119 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .nav-spacer {
+    height: 5.5rem;
+    flex-shrink: 0;
+  }
+
+  .nav-floating {
+    background: var(--nav-glass-bg);
+    border: 1px solid var(--nav-glass-border);
+    box-shadow: var(--nav-shadow);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    transition:
+      background-color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-floating-scrolled {
+    box-shadow: var(--nav-shadow-scrolled);
+  }
+
+  .nav-enter {
+    animation: navEnter 500ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes navEnter {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -12px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.35rem;
+    height: 2px;
+    width: 0;
+    border-radius: 9999px;
+    background: hsl(var(--primary));
+    transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-link:hover::after,
+  .nav-link-active::after {
+    width: calc(100% - 1.5rem);
+  }
+
+  .nav-link-active {
+    background: hsl(var(--primary) / 0.1);
+    border-radius: 9999px;
+  }
+
+  .nav-icon-btn {
+    border: 1px solid var(--nav-glass-border);
+    background: hsl(var(--background) / 0.35);
+    transition:
+      background-color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-icon-btn:hover {
+    transform: scale(1.04);
+    background: hsl(var(--primary) / 0.12);
+  }
+
+  .nav-hamburger-bar {
+    display: block;
+    height: 2px;
+    width: 18px;
+    border-radius: 9999px;
+    background: hsl(var(--foreground));
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-dropdown,
+  .nav-drawer {
+    background: var(--nav-glass-bg);
+    border: 1px solid var(--nav-glass-border);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: var(--nav-shadow);
+  }
+
+  .nav-dropdown-item:hover {
+    background: hsl(var(--primary) / 0.1);
+  }
+
+  .nav-drawer-item {
+    animation: navDrawerItem 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes navDrawerItem {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .nav-backdrop {
+    transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

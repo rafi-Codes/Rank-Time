@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Github, Facebook, Instagram, Mail, Send, Bug } from 'lucide-react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -142,22 +143,17 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="border-b sticky top-0 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="flex items-center gap-2 transition-transform hover:scale-105">
-              <img src="/logo.svg" alt="RankTime Logo" className="h-8 w-8" />
-              <h1 className="text-xl font-bold brand-gradient">RankTime</h1>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar
+        variant="minimal"
+        logoHref="/dashboard"
+        minimalAction={
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm" className="rounded-full">
+              Back to Dashboard
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

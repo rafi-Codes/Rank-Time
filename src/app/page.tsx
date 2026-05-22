@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/brand-logo';
-import { ModeToggle } from '@/components/mode-toggle';
+import Navbar from '@/components/Navbar';
+import { marketingNavLinks } from '@/components/navbar-config';
 
 const features = [
   {
@@ -70,39 +71,7 @@ export default function Home() {
     <main className="premium-shell page-enter min-h-screen overflow-x-hidden">
       <div className="premium-grid pointer-events-none fixed inset-x-0 top-0 h-[70vh]" aria-hidden="true" />
 
-      <header className="glass-tier-4 sticky top-0 z-40 border-x-0 border-t-0">
-        <div className="container flex min-h-16 flex-wrap items-center justify-between gap-3 py-2">
-          <Link href="/" className="flex min-w-0 max-w-[min(100%,14rem)] items-center gap-3 rounded-[var(--radius-lg)] border border-border/70 bg-background/70 px-2 py-1 shadow-sm backdrop-blur-sm sm:max-w-none" aria-label="Rank Time home">
-            <BrandLogo className="h-9 w-9" alt="" />
-            <span className="brand-gradient truncate text-lg font-bold sm:text-xl">Rank Time</span>
-          </Link>
-
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
-            <Link href="#features" className="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
-              Features
-            </Link>
-            <Link href="#workflow" className="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
-              Workflow
-            </Link>
-            <Link href="/contact" className="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
-              Contact
-            </Link>
-          </nav>
-
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            <ModeToggle />
-            <Button variant="ghost" className="hidden sm:inline-flex" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">
-                Start
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Navbar variant="marketing" links={marketingNavLinks} logoHref="/" />
 
       <section className="relative">
         <div className="container grid min-h-[calc(100vh-4rem)] items-center gap-12 py-16 lg:grid-cols-[0.94fr_1.06fr] lg:py-20">
