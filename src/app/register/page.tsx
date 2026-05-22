@@ -7,10 +7,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthPageShell } from '@/components/auth-page-shell';
-import { SocialAuthButtons } from '@/components/social-auth-buttons';
+import { AuthFormCard } from '@/components/auth-form-card';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -93,136 +92,15 @@ export default function RegisterPage() {
 
   return (
     <AuthPageShell>
-      <Card variant="elevated" className="w-full">
-        <CardHeader className="space-y-3">
-          <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>
-            Join RankTime and start tracking your competitive programming progress
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Registration Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <SocialAuthButtons
-            disabled={isLoading}
-            dividerLabel="or sign up with email"
-          />
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Full Name *
-              </Label>
-              <Input
-                id="name"
-                placeholder="John Doe"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (errors.name) {
-                    setErrors({ ...errors, name: '' });
-                  }
-                }}
-                error={!!errors.name}
-                helperText={errors.name}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address *
-              </Label>
-              <Input
-                id="email"
-                placeholder="your@email.com"
-                type="email"
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect="off"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) {
-                    setErrors({ ...errors, email: '' });
-                  }
-                }}
-                error={!!errors.email}
-                helperText={errors.email || "We'll never share your email"}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password *
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) {
-                    setErrors({ ...errors, password: '' });
-                  }
-                }}
-                error={!!errors.password}
-                helperText={
-                  errors.password ||
-                  `${password.length}/7 characters (${passwordStrength || 'start typing'})`
-                }
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="text-sm font-medium">
-                Confirm Password *
-              </Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (errors.confirmPassword) {
-                    setErrors({ ...errors, confirmPassword: '' });
-                  }
-                }}
-                error={!!errors.confirmPassword}
-                success={
-                  confirmPassword === password && password !== '' && !errors.confirmPassword
-                }
-                helperText={errors.confirmPassword}
-                disabled={isLoading}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              isLoading={isLoading}
-              loadingText="Creating Account..."
-              size="lg"
-            >
-              Create Account
-            </Button>
-          </form>
-
-          <div className="border-t border-border/50 pt-4 text-center">
-            <p className="text-sm text-muted-foreground">
+      <AuthFormCard
+        title="Create an account"
+        description="Join RankTime and start tracking your competitive programming progress"
+        socialMode="signup"
+        disableSocial={isLoading}
+        className="sm:max-w-lg"
+        footer={
+          <>
+            <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link
                 href="/login"
@@ -231,20 +109,133 @@ export default function RegisterPage() {
                 Sign in
               </Link>
             </p>
+            <p className="mt-4 text-center text-xs text-muted-foreground/70">
+              By creating an account, you agree to our{' '}
+              <Link href="/terms" className="underline hover:text-primary">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="underline hover:text-primary">
+                Privacy Policy
+              </Link>
+            </p>
+          </>
+        }
+      >
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Registration Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium">
+              Full Name *
+            </Label>
+            <Input
+              id="name"
+              placeholder="John Doe"
+              type="text"
+              required
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) {
+                  setErrors({ ...errors, name: '' });
+                }
+              }}
+              error={!!errors.name}
+              helperText={errors.name}
+              disabled={isLoading}
+            />
           </div>
 
-          <p className="text-center text-xs text-muted-foreground/70">
-            By creating an account, you agree to our{' '}
-            <Link href="/terms" className="underline hover:text-primary">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="underline hover:text-primary">
-              Privacy Policy
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email Address *
+            </Label>
+            <Input
+              id="email"
+              placeholder="your@email.com"
+              type="email"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect="off"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) {
+                  setErrors({ ...errors, email: '' });
+                }
+              }}
+              error={!!errors.email}
+              helperText={errors.email || "We'll never share your email"}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium">
+              Password *
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) {
+                  setErrors({ ...errors, password: '' });
+                }
+              }}
+              error={!!errors.password}
+              helperText={
+                errors.password ||
+                `${password.length}/7 characters (${passwordStrength || 'start typing'})`
+              }
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password" className="text-sm font-medium">
+              Confirm Password *
+            </Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: '' });
+                }
+              }}
+              error={!!errors.confirmPassword}
+              success={
+                confirmPassword === password && password !== '' && !errors.confirmPassword
+              }
+              helperText={errors.confirmPassword}
+              disabled={isLoading}
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            isLoading={isLoading}
+            loadingText="Creating Account..."
+            size="lg"
+          >
+            Create Account
+          </Button>
+        </form>
+      </AuthFormCard>
     </AuthPageShell>
   );
 }

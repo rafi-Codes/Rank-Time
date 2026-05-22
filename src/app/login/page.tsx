@@ -8,10 +8,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthPageShell } from '@/components/auth-page-shell';
-import { SocialAuthButtons } from '@/components/social-auth-buttons';
+import { AuthFormCard } from '@/components/auth-form-card';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -144,252 +143,246 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <AuthPageShell>
-      {!showForgot ? (
-        <Card variant="elevated" className="w-full">
-          <CardHeader className="space-y-3">
-            <CardTitle className="text-2xl">Sign in to your account</CardTitle>
-            <CardDescription>
-              Access your RankTime dashboard and track your progress
-            </CardDescription>
-          </CardHeader>
+  if (showForgot) {
+    return (
+      <AuthPageShell>
+        <AuthFormCard
+          title="Reset your password"
+          description={
+            !otpSent
+              ? 'Enter your email to receive a password reset code'
+              : 'Enter the code and choose a new password'
+          }
+          showSocial={false}
+          socialMode="signin"
+        >
+          {fpStatus && (
+            <Alert variant={fpStatus.includes('successful') ? 'success' : 'default'}>
+              <AlertDescription>{fpStatus}</AlertDescription>
+            </Alert>
+          )}
 
-          <CardContent className="space-y-6">
-            {success && (
-              <Alert variant="success">
-                <AlertTitle>Success</AlertTitle>
-                <AlertDescription>{success}</AlertDescription>
-              </Alert>
-            )}
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Sign In Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <SocialAuthButtons disabled={isLoading} />
-
-            <form onSubmit={handleSubmit} className="space-y-5">
+          {!otpSent ? (
+            <div className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email-address" className="text-sm font-medium">
+                <Label htmlFor="reset-email" className="text-sm font-medium">
                   Email Address *
                 </Label>
                 <Input
-                  id="email-address"
-                  name="email"
+                  id="reset-email"
                   type="email"
-                  autoComplete="email"
-                  required
                   value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors({ ...errors, email: '' });
-                  }}
-                  error={!!errors.email}
-                  helperText={errors.email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password *
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors({ ...errors, password: '' });
-                  }}
-                  error={!!errors.password}
-                  helperText={errors.password}
-                  placeholder="••••••••"
-                  disabled={isLoading}
+                  disabled={fpLoading}
                 />
               </div>
 
               <Button
-                type="submit"
-                isLoading={isLoading}
-                loadingText="Signing in..."
+                type="button"
+                onClick={handleSendOTP}
+                isLoading={fpLoading}
+                loadingText="Sending..."
                 size="lg"
                 className="w-full"
               >
-                Sign In
+                Send Reset Code
               </Button>
-            </form>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="otp-code" className="text-sm font-medium">
+                  Verification Code *
+                </Label>
+                <Input
+                  id="otp-code"
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="000000"
+                  disabled={resetLoading}
+                />
+              </div>
 
-            <div className="text-center">
+              <div className="space-y-2">
+                <Label htmlFor="new-password" className="text-sm font-medium">
+                  New Password *
+                </Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  helperText="At least 7 characters"
+                  disabled={resetLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password" className="text-sm font-medium">
+                  Confirm Password *
+                </Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  success={confirmPassword === newPassword && newPassword !== ''}
+                  disabled={resetLoading}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={handleResetPassword}
+                  isLoading={resetLoading}
+                  loadingText="Resetting..."
+                  size="lg"
+                  className="flex-1"
+                  variant="success"
+                >
+                  Reset Password
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setShowForgot(false);
+                    setOtpSent(false);
+                    setFpStatus('');
+                  }}
+                  size="lg"
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgot(false);
+                setOtpSent(false);
+                setFpStatus('');
+              }}
+              className="text-sm font-medium text-primary transition-colors hover:text-primary/90"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </AuthFormCard>
+      </AuthPageShell>
+    );
+  }
+
+  return (
+    <AuthPageShell>
+      <AuthFormCard
+        title="Sign in to your account"
+        description="Access your RankTime dashboard and track your progress"
+        socialMode="signin"
+        disableSocial={isLoading}
+        footer={
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link
+              href="/register"
+              className="font-semibold text-primary transition-colors hover:text-primary/90"
+            >
+              Sign up
+            </Link>
+          </p>
+        }
+      >
+        {success && (
+          <Alert variant="success">
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Sign In Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="email-address" className="text-sm font-medium">
+              Email Address *
+            </Label>
+            <Input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors({ ...errors, email: '' });
+              }}
+              error={!!errors.email}
+              helperText={errors.email}
+              placeholder="you@example.com"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password *
+              </Label>
               <button
                 type="button"
                 onClick={() => {
                   setShowForgot(true);
                   setFpStatus('');
                 }}
-                className="text-sm font-medium text-primary transition-colors hover:text-primary/90"
+                className="text-xs font-medium text-primary transition-colors hover:text-primary/90"
               >
                 Forgot password?
               </button>
             </div>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) setErrors({ ...errors, password: '' });
+              }}
+              error={!!errors.password}
+              helperText={errors.password}
+              placeholder="••••••••"
+              disabled={isLoading}
+            />
+          </div>
 
-            <div className="border-t border-border/50 pt-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don&apos;t have an account?{' '}
-                <Link
-                  href="/register"
-                  className="font-semibold text-primary transition-colors hover:text-primary/90"
-                >
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card variant="elevated" className="w-full">
-          <CardHeader className="space-y-3">
-            <CardTitle className="text-2xl">Reset your password</CardTitle>
-            <CardDescription>
-              {!otpSent
-                ? 'Enter your email to receive a password reset code'
-                : 'Enter the code and choose a new password'}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {fpStatus && (
-              <Alert variant={fpStatus.includes('successful') ? 'success' : 'default'}>
-                <AlertDescription>{fpStatus}</AlertDescription>
-              </Alert>
-            )}
-
-            {!otpSent ? (
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-sm font-medium">
-                    Email Address *
-                  </Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    disabled={fpLoading}
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={handleSendOTP}
-                  isLoading={fpLoading}
-                  loadingText="Sending..."
-                  size="lg"
-                  className="w-full"
-                >
-                  Send Reset Code
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="otp-code" className="text-sm font-medium">
-                    Verification Code *
-                  </Label>
-                  <Input
-                    id="otp-code"
-                    type="text"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="000000"
-                    disabled={resetLoading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="new-password" className="text-sm font-medium">
-                    New Password *
-                  </Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    helperText="At least 7 characters"
-                    disabled={resetLoading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-new-password" className="text-sm font-medium">
-                    Confirm Password *
-                  </Label>
-                  <Input
-                    id="confirm-new-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    success={confirmPassword === newPassword && newPassword !== ''}
-                    disabled={resetLoading}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    onClick={handleResetPassword}
-                    isLoading={resetLoading}
-                    loadingText="Resetting..."
-                    size="lg"
-                    className="flex-1"
-                    variant="success"
-                  >
-                    Reset Password
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setShowForgot(false);
-                      setOtpSent(false);
-                      setFpStatus('');
-                    }}
-                    size="lg"
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="border-t border-border/50 pt-4 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForgot(false);
-                  setOtpSent(false);
-                  setFpStatus('');
-                }}
-                className="text-sm font-medium text-primary transition-colors hover:text-primary/90"
-              >
-                Back to sign in
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          <Button
+            type="submit"
+            isLoading={isLoading}
+            loadingText="Signing in..."
+            size="lg"
+            className="w-full"
+          >
+            Sign In
+          </Button>
+        </form>
+      </AuthFormCard>
     </AuthPageShell>
   );
 }
