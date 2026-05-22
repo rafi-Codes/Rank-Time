@@ -112,13 +112,17 @@ export default function CodeforcesTab() {
     const checkConnectionStatus = async () => {
       if (!session?.user?.email) return;
 
+      // Only check server if we don't have a locally stored handle
+      const storedHandle = localStorage.getItem('ranktime-codeforces-handle');
+      if (storedHandle) return;
+
       try {
         const response = await fetch('/api/user/codeforces-status');
         if (response.ok) {
           const data = await response.json();
           setIsConnected(data.isConnected);
-          setConnectedHandle(data.handle);
           if (data.isConnected && data.handle) {
+            setConnectedHandle(data.handle);
             setHandle(data.handle);
             // Auto-fetch data for connected users
             fetchCodeforcesData(data.handle);
@@ -130,7 +134,7 @@ export default function CodeforcesTab() {
     };
 
     checkConnectionStatus();
-  }, [session, fetchCodeforcesData]);
+  }, [session]);
 
   const connectCodeforces = async () => {
     if (!handle.trim()) {
