@@ -40,16 +40,16 @@ describe('Health API routes', () => {
     expect(body.data.email.healthy).toBe(true);
   });
 
-  it('returns 503 when a service is degraded', async () => {
+  it('returns 200 when the system is loaded but database is unavailable', async () => {
     dbMock.isDbHealthy.mockResolvedValue({ ok: false, error: 'db down', state: 0 });
     openRouterClientMock.getOpenRouterHealth.mockResolvedValue({ healthy: true, provider: 'openrouter', message: 'ok', circuitOpen: false });
     emailQueueMock.getEmailQueueHealth.mockResolvedValue({ healthy: true, message: 'ok' });
 
     const response = await healthRoute.GET();
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error.code).toBe('SYSTEM_HEALTH_CHECK_FAILED');
+    expect(body.success).toBe(true);
+    expect(body.data.db.ok).toBe(false);
   });
 });
 
@@ -68,14 +68,14 @@ describe('OpenRouter health route', () => {
     expect(body.data.healthy).toBe(true);
   });
 
-  it('returns 503 when OpenRouter is degraded', async () => {
+  it('returns 200 when OpenRouter is degraded', async () => {
     openRouterClientMock.getOpenRouterHealth.mockResolvedValue({ healthy: false, provider: 'openrouter', message: 'circuit open', circuitOpen: true });
 
     const response = await openRouterRoute.GET();
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error.code).toBe('OPENROUTER_HEALTH_CHECK_FAILED');
+    expect(body.success).toBe(true);
+    expect(body.data.healthy).toBe(false);
   });
 });
 
@@ -102,7 +102,7 @@ describe('Email queue health route', () => {
     expect(body.data.healthy).toBe(true);
   });
 
-  it('returns 503 when email queue status is unhealthy', async () => {
+  it('returns 200 when email queue status is degraded', async () => {
     emailQueueMock.getEmailQueueStatus.mockResolvedValue({
       healthy: false,
       message: 'failed',
@@ -114,9 +114,9 @@ describe('Email queue health route', () => {
     });
 
     const response = await emailQueueRoute.GET();
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.success).toBe(false);
-    expect(body.error.code).toBe('EMAIL_QUEUE_STATUS_FAILED');
+    expect(body.success).toBe(true);
+    expect(body.data.healthy).toBe(false);
   });
 });

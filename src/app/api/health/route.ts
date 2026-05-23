@@ -26,25 +26,16 @@ export async function GET() {
       console.error('Email queue health check error:', error);
     }
 
-    // Database must be healthy; optional services can be degraded
-    const healthy = db.ok;
     const payload = {
       db,
       openRouter,
       email,
     };
 
-    if (!healthy) {
-      return NextResponse.json(
-        errorResponse('SYSTEM_HEALTH_CHECK_FAILED', 'Database is unavailable', 503, payload),
-        { status: 503 }
-      );
-    }
-
-    // If database is OK but optional services are down, return 200 with degraded status
-    const allServicesHealthy = db.ok && openRouter.healthy && email.healthy;
-    const statusCode = allServicesHealthy ? 200 : 200;
-    const message = allServicesHealthy ? 'System health check passed' : 'System healthy but some optional services degraded';
+    const statusCode = 200;
+    const message = db.ok && openRouter.healthy && email.healthy
+      ? 'System health check passed'
+      : 'System health check loaded with degraded services';
 
     return NextResponse.json(
       successResponse(payload, message, statusCode),

@@ -49,8 +49,17 @@ export default async function connectDB() {
 }
 
 export async function isDbHealthy() {
-  const conn = await connectDB();
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    return {
+      ok: false,
+      error: 'Invalid/Missing environment variable: "MONGODB_URI"',
+      state: 0,
+    };
+  }
+
   try {
+    const conn = await connectDB();
     if (!conn.connection.db) {
       return {
         ok: false,
@@ -58,7 +67,7 @@ export async function isDbHealthy() {
         state: conn.connection.readyState,
       };
     }
-    await conn.connection.db?.admin().ping();
+    await conn.connection.db.admin().ping();
     return {
       ok: true,
       state: conn.connection.readyState,
@@ -67,7 +76,7 @@ export async function isDbHealthy() {
     return {
       ok: false,
       error: error instanceof Error ? error.message : String(error),
-      state: conn.connection.readyState,
+      state: 0,
     };
   }
 }

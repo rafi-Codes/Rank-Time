@@ -191,8 +191,8 @@ export default function Navbar({
 
   const logoContent = (
     <>
-      <BrandLogo className="h-8 w-8 sm:h-9 sm:w-9" alt="" />
-      <span className="brand-gradient hidden truncate text-base font-bold sm:inline sm:text-lg">
+      <BrandLogo className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9" alt="" />
+      <span className="brand-gradient truncate text-xs font-bold sm:text-base lg:text-lg">
         Rank Time
       </span>
     </>

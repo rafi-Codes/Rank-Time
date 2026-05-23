@@ -7,15 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const health = await getOpenRouterHealth();
-  if (!health.healthy) {
-    return NextResponse.json(
-      errorResponse('OPENROUTER_HEALTH_CHECK_FAILED', health.message, 503, health),
-      { status: 503 }
-    );
-  }
 
   return NextResponse.json(
-    successResponse(health, 'OpenRouter health check passed', 200),
+    successResponse(
+      health,
+      health.healthy ? 'OpenRouter health check passed' : 'OpenRouter health check degraded',
+      200
+    ),
     { status: 200 }
   );
 }

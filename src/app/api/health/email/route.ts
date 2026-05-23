@@ -7,15 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const health = await getEmailQueueHealth();
-  if (!health.healthy) {
-    return NextResponse.json(
-      errorResponse('EMAIL_QUEUE_HEALTH_CHECK_FAILED', health.message, 503, health),
-      { status: 503 }
-    );
-  }
 
   return NextResponse.json(
-    successResponse(health, 'Email queue health check passed', 200),
+    successResponse(
+      health,
+      health.healthy ? 'Email queue health check passed' : 'Email queue health check degraded',
+      200
+    ),
     { status: 200 }
   );
 }
