@@ -85,7 +85,7 @@ export default function Home() {
               Rank Time
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              A focused practice cockpit for timing sessions, reviewing performance, earning badges, and improving with data-driven coaching.
+              Unleash Skills Beyond The Clock
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
