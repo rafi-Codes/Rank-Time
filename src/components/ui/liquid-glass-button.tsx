@@ -137,10 +137,10 @@ function GlassFilter() {
       <defs>
         <filter
           id="container-glass"
-          x="0%"
-          y="0%"
-          width="100%"
-          height="100%"
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
           colorInterpolationFilters="sRGB"
         >
           {/* Generate turbulent noise for distortion */}
@@ -159,14 +159,14 @@ function GlassFilter() {
           <feDisplacementMap
             in="SourceGraphic"
             in2="blurredNoise"
-            scale="70"
+            scale="12"
             xChannelSelector="R"
             yChannelSelector="B"
             result="displaced"
           />
 
           {/* Apply overall blur on the final result */}
-          <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur" />
+          <feGaussianBlur in="displaced" stdDeviation="2" result="finalBlur" />
 
           {/* Output the result */}
           <feComposite in="finalBlur" in2="finalBlur" operator="over" />

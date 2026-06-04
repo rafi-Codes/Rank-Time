@@ -167,10 +167,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               <defs>
                 <filter
                   id="container-glass"
-                  x="0%"
-                  y="0%"
-                  width="100%"
-                  height="100%"
+                  x="-20%"
+                  y="-20%"
+                  width="140%"
+                  height="140%"
                   colorInterpolationFilters="sRGB"
                 >
                   <feTurbulence
@@ -184,12 +184,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                   <feDisplacementMap
                     in="SourceGraphic"
                     in2="blurredNoise"
-                    scale="70"
+                    scale="12"
                     xChannelSelector="R"
                     yChannelSelector="B"
                     result="displaced"
                   />
-                  <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur" />
+                  <feGaussianBlur in="displaced" stdDeviation="2" result="finalBlur" />
                   <feComposite in="finalBlur" in2="finalBlur" operator="over" />
                 </filter>
               </defs>
