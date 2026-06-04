@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 0 0% 100%;
+
     /* ========== PRIMARY COLORS ========== */
     --color-cyan-primary: #00d9ff;
     --color-cyan-light: #4ffbff;
@@ -563,6 +566,8 @@
     --border: 212 26% 88%;
     --input: 212 26% 88%;
     --ring: 187 100% 50%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 0 0% 100%;
   }
 
   .dark,
@@ -629,6 +634,8 @@
     --border: 220 37% 28%;
     --input: 220 37% 28%;
     --ring: 187 100% 50%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 0 0% 100%;
   }
 
   html {

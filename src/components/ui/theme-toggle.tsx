@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 
 interface ThemeToggleProps {
@@ -9,12 +10,14 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
-  const [isDark, setIsDark] = useState(true)
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-  // next-themes
-  // const { resolvedTheme, setTheme } = useTheme()
-  // const isDark = resolvedTheme === "dark"
-  // onClick={() => setTheme(isDark ? "light" : "dark")}
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = mounted && resolvedTheme === "dark"
 
   return (
     <div
@@ -25,9 +28,15 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           : "bg-white border border-zinc-200",
         className
       )}
-      onClick={() => setIsDark(!isDark)}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       role="button"
       tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          setTheme(isDark ? "light" : "dark")
+        }
+      }}
     >
       <div className="flex justify-between items-center w-full">
         <div

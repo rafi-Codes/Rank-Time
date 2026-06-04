@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SaveButton } from '@/components/ui/save-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -48,13 +49,13 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setError('');
 
     if (!validateForm()) {
       setError('Please fix the errors below');
-      return;
+      throw new Error('Validation failed');
     }
 
     setIsLoading(true);
@@ -78,10 +79,14 @@ export default function RegisterPage() {
         throw new Error(data.message || 'Failed to create account');
       }
 
+      // Wait 1 second so they see the Saved! state and confetti before redirecting
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create account';
       setError(message);
+      setIsLoading(false);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +134,7 @@ export default function RegisterPage() {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
               Full Name *
@@ -225,15 +230,17 @@ export default function RegisterPage() {
             />
           </div>
 
-          <Button
+          <SaveButton
             type="submit"
-            className="w-full"
-            isLoading={isLoading}
-            loadingText="Creating Account..."
-            size="lg"
-          >
-            Create Account
-          </Button>
+            disabled={isLoading}
+            className="w-full h-11 mt-2 text-foreground font-semibold"
+            text={{
+              idle: "Create Account",
+              saving: "Creating Account...",
+              saved: "Account Created!"
+            }}
+            onSave={handleSubmit}
+          />
         </form>
       </AuthFormCard>
     </AuthPageShell>

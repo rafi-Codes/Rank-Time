@@ -16,6 +16,7 @@ import { signOut } from 'next-auth/react';
 import { BrandLogo } from '@/components/brand-logo';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export type NavLinkItem = {
   label: string;
@@ -46,42 +47,6 @@ export type NavbarProps = {
   showSettings?: boolean;
   minimalAction?: React.ReactNode;
 };
-
-function ThemeToggleButton({ className }: { className?: string }) {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === 'dark';
-
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className={cn(
-        'nav-icon-btn relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full',
-        className
-      )}
-      aria-label="Toggle theme"
-    >
-      <Sun
-        className={cn(
-          'absolute h-[18px] w-[18px] text-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
-        )}
-      />
-      <Moon
-        className={cn(
-          'absolute h-[18px] w-[18px] text-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          isDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
-        )}
-      />
-    </button>
-  );
-}
 
 function NavLink({
   item,
@@ -303,7 +268,7 @@ export default function Navbar({
             </div>
           )}
 
-          <ThemeToggleButton />
+          <ThemeToggle />
 
           {variant === 'marketing' && (
             <div className="flex items-center gap-2">
@@ -345,7 +310,7 @@ export default function Navbar({
         {/* Mobile menu trigger */}
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           {variant === 'minimal' && minimalAction}
-          <ThemeToggleButton className="md:hidden" />
+          <ThemeToggle className="md:hidden" />
           <button
             type="button"
             className="nav-icon-btn flex h-10 w-10 flex-col items-center justify-center gap-[5px] rounded-full"
@@ -522,7 +487,7 @@ export default function Navbar({
             style={{ animationDelay: `${(links.length + settingsItems.length + 4) * 50}ms` }}
           >
             <span className="text-sm font-medium text-muted-foreground">Theme</span>
-            <ThemeToggleButton />
+            <ThemeToggle />
           </div>
         </nav>
       </aside>
