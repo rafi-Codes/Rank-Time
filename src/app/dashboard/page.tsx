@@ -40,38 +40,6 @@ const menuItems = [
     iconColor: "text-orange-500",
   },
   {
-    icon: BookOpen,
-    label: "Tracksheet",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(6,182,212,0.15) 0%, rgba(8,145,178,0.06) 50%, rgba(15,118,110,0) 100%)",
-    iconColor: "text-cyan-500",
-  },
-  {
-    icon: User,
-    label: "Profile",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
-    iconColor: "text-red-500",
-  },
-  {
-    icon: TrendingUp,
-    label: "Graphs",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(147,51,234,0.06) 50%, rgba(109,40,217,0) 100%)",
-    iconColor: "text-purple-500",
-  },
-  {
-    icon: Trophy,
-    label: "Leaderboard",
-    href: "#",
-    gradient:
-      "radial-gradient(circle, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.06) 50%, rgba(180,83,9,0) 100%)",
-    iconColor: "text-amber-500",
-  },
-  {
     icon: Bot,
     label: "Rank Buddy",
     href: "#",
@@ -226,7 +194,7 @@ export default function Dashboard() {
               items={menuItems}
               activeItem={activeTab}
               onItemClick={(label) => setActiveTab(label.replace(/\s+/g, "").toLowerCase())}
-              className="w-full"
+              className="max-w-fit mx-auto"
             />
 
             <TabsContent value="stopwatch" className="outline-none">

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   LogOut,
+  Menu,
   Moon,
   Settings,
   Sun,
@@ -246,7 +247,7 @@ export default function Navbar({
                 aria-haspopup="true"
                 aria-expanded={settingsOpen}
               >
-                <Settings className="h-[18px] w-[18px] text-foreground" />
+                <Menu className="h-[18px] w-[18px] text-foreground" />
               </button>
               {settingsOpen && (
                 <div className="nav-dropdown absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[11rem] overflow-hidden rounded-2xl py-1">
