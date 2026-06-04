@@ -218,8 +218,8 @@ export default function TracksheetTab() {
             <div className="flex gap-2">
               <Button
                 onClick={exportToCSV}
-                variant="outline"
-                className="h-11 flex-1 justify-center sm:h-10"
+                variant="liquidOutline"
+                className="h-11 flex-1 justify-center sm:h-10 rounded-xl"
                 disabled={filteredSessions.length === 0}
                 icon={<FileText className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
@@ -227,8 +227,8 @@ export default function TracksheetTab() {
               </Button>
               <Button
                 onClick={exportToExcel}
-                variant="outline"
-                className="h-11 flex-1 justify-center sm:h-10"
+                variant="liquidOutline"
+                className="h-11 flex-1 justify-center sm:h-10 rounded-xl"
                 disabled={filteredSessions.length === 0}
                 icon={<FileSpreadsheet className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >

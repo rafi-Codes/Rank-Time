@@ -137,7 +137,12 @@ export default function SocialTab() {
               onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
               className="flex-1"
             />
-            <Button onClick={searchUsers} disabled={isSearching || searchQuery.length < 2}>
+            <Button
+              onClick={searchUsers}
+              disabled={isSearching || searchQuery.length < 2}
+              variant="liquid"
+              className="rounded-xl"
+            >
               {isSearching ? 'Searching...' : 'Search'}
             </Button>
           </div>
@@ -173,19 +178,22 @@ export default function SocialTab() {
                   </div>
                   {following.some((followedUser) => followedUser._id === user._id) ? (
                     <Button
-                      variant="outline"
+                      variant="liquidOutline"
                       size="sm"
                       onClick={() => handleUnfollow(user._id)}
                       disabled={isLoading}
+                      className="rounded-xl"
                     >
                       <UserMinus className="h-4 w-4 mr-1" />
                       Unfollow
                     </Button>
                   ) : (
                     <Button
+                      variant="liquid"
                       size="sm"
                       onClick={() => handleFollow(user._id)}
                       disabled={isLoading}
+                      className="rounded-xl"
                     >
                       <UserPlus className="h-4 w-4 mr-1" />
                       Follow
@@ -235,10 +243,11 @@ export default function SocialTab() {
                     </Badge>
                   </div>
                   <Button
-                    variant="outline"
+                    variant="liquidOutline"
                     size="sm"
                     onClick={() => handleUnfollow(user._id)}
                     disabled={isLoading}
+                    className="rounded-xl"
                   >
                     <UserMinus className="h-4 w-4 mr-1" />
                     Unfollow

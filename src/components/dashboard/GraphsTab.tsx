@@ -105,7 +105,7 @@ export default function GraphsTab() {
                 <SelectItem value="365">Last year</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={fetchGraphData} variant="outline">
+            <Button onClick={fetchGraphData} variant="liquidOutline" className="rounded-xl">
               Refresh
             </Button>
           </div>

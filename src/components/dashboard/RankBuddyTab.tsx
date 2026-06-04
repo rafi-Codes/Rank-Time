@@ -563,9 +563,10 @@ export default function RankBuddyTab() {
                         </div>
                         {!challenge.completed && new Date(challenge.deadline) > new Date() && (
                           <Button
+                            variant="liquid"
                             size="sm"
                             onClick={() => completeChallenge(challenge._id)}
-                            className="text-xs"
+                            className="text-xs rounded-xl"
                           >
                             Complete
                           </Button>
@@ -625,9 +626,10 @@ export default function RankBuddyTab() {
                         </div>
                         {!challenge.completed && new Date(challenge.deadline) > new Date() && (
                           <Button
+                            variant="liquid"
                             size="sm"
                             onClick={() => completeChallenge(challenge._id)}
-                            className="text-xs"
+                            className="text-xs rounded-xl"
                           >
                             Complete
                           </Button>
@@ -1214,10 +1216,10 @@ export default function RankBuddyTab() {
           <Button
             key={id}
             type="button"
-            variant={activeView === id ? 'default' : 'outline'}
+            variant={activeView === id ? 'liquid' : 'liquidOutline'}
             onClick={() => setActiveView(id)}
             size="sm"
-            className="h-11 w-full min-w-0 justify-center gap-2 px-3 sm:h-10 sm:px-4"
+            className="h-11 w-full min-w-0 justify-center gap-2 px-3 sm:h-10 sm:px-4 rounded-xl"
             icon={<Icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
           >
             <span className="truncate">{label}</span>

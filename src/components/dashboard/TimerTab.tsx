@@ -124,9 +124,10 @@ export default function TimerTab() {
             {!isRunning ? (
               <Button
                 onClick={handleStart}
+                variant="liquid"
                 size="lg"
                 disabled={minutes === 0 && seconds === 0}
-                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
                 icon={<Play className="h-4 w-4" aria-hidden="true" />}
               >
                 Start
@@ -134,9 +135,9 @@ export default function TimerTab() {
             ) : (
               <Button
                 onClick={handlePause}
-                variant="secondary"
+                variant="liquidOutline"
                 size="lg"
-                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
                 icon={<Pause className="h-4 w-4" aria-hidden="true" />}
               >
                 Pause
@@ -144,9 +145,9 @@ export default function TimerTab() {
             )}
             <Button
               onClick={handleReset}
-              variant="outline"
+              variant="liquidOutline"
               size="lg"
-              className="w-full sm:min-w-[8.5rem] sm:w-auto"
+              className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
               icon={<RotateCcw className="h-4 w-4" aria-hidden="true" />}
             >
               Reset
@@ -155,13 +156,13 @@ export default function TimerTab() {
 
           {/* Preset Buttons */}
           <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
-            <Button onClick={startPomodoro} variant="outline" className="w-full sm:w-auto">
+            <Button onClick={startPomodoro} variant="liquidOutline" className="w-full sm:w-auto rounded-full">
               25 min Focus
             </Button>
-            <Button onClick={startBreak} variant="outline" className="w-full sm:w-auto">
+            <Button onClick={startBreak} variant="liquidOutline" className="w-full sm:w-auto rounded-full">
               5 min Break
             </Button>
-            <Button onClick={handleCustomTime} variant="outline" className="w-full sm:w-auto">
+            <Button onClick={handleCustomTime} variant="liquidOutline" className="w-full sm:w-auto rounded-full">
               Custom Time
             </Button>
           </div>

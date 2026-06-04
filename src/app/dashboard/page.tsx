@@ -139,7 +139,8 @@ export default function Dashboard() {
           </p>
           <Button
             onClick={() => router.push('/login')}
-            className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold rounded-full py-2.5"
+            variant="liquid"
+            className="w-full font-bold rounded-full py-2.5"
           >
             Go to Login
           </Button>

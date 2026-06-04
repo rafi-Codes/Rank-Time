@@ -3,12 +3,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Github, Facebook, Instagram, Mail, Send, Bug } from 'lucide-react';
+import { Github, Facebook, Instagram, Mail, Send, Bug, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 
@@ -326,15 +327,23 @@ export default function ContactPage() {
                   )}
                 </div>
 
-                <Button
+                <LiquidButton
                   type="submit"
-                  isLoading={isSubmitting}
-                  loadingText="Submitting..."
-                  className="w-full"
-                  icon={!isSubmitting ? <Send className="w-4 h-4" /> : undefined}
+                  disabled={isSubmitting}
+                  className="w-full h-11 rounded-full text-white font-semibold text-sm cursor-pointer border border-cyan-400/20 bg-gradient-to-r from-cyan-500 to-cyan-400 hover:brightness-110 active:brightness-95 transition-all flex items-center justify-center gap-2"
                 >
-                  Submit Bug Report
-                </Button>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Submit Bug Report</span>
+                    </>
+                  )}
+                </LiquidButton>
               </form>
             </CardContent>
           </Card>

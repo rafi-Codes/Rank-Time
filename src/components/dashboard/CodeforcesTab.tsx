@@ -306,6 +306,8 @@ export default function CodeforcesTab() {
               <Button
                 onClick={connectCodeforces}
                 disabled={loading}
+                variant="liquid"
+                className="rounded-xl"
               >
                 {loading ? 'Connecting...' : 'Connect Account'}
               </Button>
@@ -315,13 +317,15 @@ export default function CodeforcesTab() {
               <Button
                 onClick={() => fetchCodeforcesData()}
                 disabled={loading}
-                variant="outline"
+                variant="liquidOutline"
+                className="rounded-xl"
               >
                 {loading ? 'Refreshing...' : 'Refresh Data'}
               </Button>
               <Button
                 onClick={disconnectCodeforces}
                 variant="destructive"
+                className="rounded-xl"
               >
                 Disconnect
               </Button>

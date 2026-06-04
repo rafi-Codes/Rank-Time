@@ -199,7 +199,7 @@ export default function LeaderboardTab() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={fetchLeaderboard} variant="outline">
+            <Button onClick={fetchLeaderboard} variant="liquidOutline" className="rounded-xl">
               Refresh
             </Button>
           </div>
@@ -308,9 +308,9 @@ export default function LeaderboardTab() {
               </p>
               <Button
                 onClick={() => fetchCurrentUserStats(0)}
-                variant="outline"
+                variant="liquidOutline"
                 size="sm"
-                className="text-xs"
+                className="text-xs rounded-xl"
               >
                 Retry Loading
               </Button>

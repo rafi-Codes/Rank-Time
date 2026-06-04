@@ -225,8 +225,8 @@ export default function StopwatchTab() {
             <Button
               onClick={fetchRecentProblem}
               disabled={loadingProblems}
-              variant="outline"
-              className="h-11 w-full flex-1 justify-center text-sm sm:h-10"
+              variant="liquidOutline"
+              className="h-11 w-full flex-1 justify-center text-sm sm:h-10 rounded-xl"
               icon={<Download className="h-4 w-4 shrink-0" aria-hidden="true" />}
               isLoading={loadingProblems}
               loadingText="Loading..."
@@ -236,8 +236,8 @@ export default function StopwatchTab() {
             {recentProblem && (
               <Button
                 onClick={() => selectProblem(recentProblem)}
-                variant="secondary"
-                className="flex-1 text-sm"
+                variant="liquidOutline"
+                className="flex-1 text-sm rounded-xl h-11 sm:h-10"
               >
                 Use Recent Problem
               </Button>
@@ -296,8 +296,9 @@ export default function StopwatchTab() {
             {!isRunning ? (
               <Button
                 onClick={handleStart}
+                variant="liquid"
                 size="lg"
-                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
                 icon={<Play className="h-4 w-4" aria-hidden="true" />}
               >
                 Start
@@ -305,9 +306,9 @@ export default function StopwatchTab() {
             ) : (
               <Button
                 onClick={handlePause}
-                variant="secondary"
+                variant="liquidOutline"
                 size="lg"
-                className="w-full sm:min-w-[8.5rem] sm:w-auto"
+                className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
                 icon={<Pause className="h-4 w-4" aria-hidden="true" />}
               >
                 Pause
@@ -315,9 +316,9 @@ export default function StopwatchTab() {
             )}
             <Button
               onClick={handleReset}
-              variant="outline"
+              variant="liquidOutline"
               size="lg"
-              className="w-full sm:min-w-[8.5rem] sm:w-auto"
+              className="w-full sm:min-w-[8.5rem] sm:w-auto rounded-full"
               icon={<Square className="h-4 w-4" aria-hidden="true" />}
             >
               Reset
@@ -339,7 +340,8 @@ export default function StopwatchTab() {
               <Button
                 onClick={handleLap}
                 disabled={!isRunning}
-                className="h-11 w-full justify-center sm:h-10 sm:w-auto"
+                variant="liquid"
+                className="h-11 w-full justify-center sm:h-10 sm:w-auto rounded-xl"
                 icon={<Plus className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
                 Add Lap
@@ -396,7 +398,12 @@ export default function StopwatchTab() {
 
           {/* Save Session */}
           <div className="flex justify-end">
-            <Button onClick={saveSession} disabled={!problemTitle || !problemRating}>
+            <Button
+              onClick={saveSession}
+              disabled={!problemTitle || !problemRating}
+              variant="liquid"
+              className="rounded-xl"
+            >
               Save Session
             </Button>
           </div>

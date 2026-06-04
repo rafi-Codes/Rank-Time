@@ -223,9 +223,10 @@ export default function ProfileTab() {
             <CardTitle className="flex items-center justify-between">
               <span>Choose Your Avatar</span>
               <Button
-                variant="outline"
+                variant="liquidOutline"
                 size="sm"
                 onClick={() => setShowAvatarSelector(false)}
+                className="rounded-xl"
               >
                 Cancel
               </Button>
@@ -253,8 +254,8 @@ export default function ProfileTab() {
             <div className="flex justify-center">
               <Button
                 onClick={generateAvatarOptions}
-                variant="outline"
-                className="justify-center"
+                variant="liquidOutline"
+                className="justify-center rounded-xl"
                 icon={<Shuffle className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
                 Shuffle Avatars
