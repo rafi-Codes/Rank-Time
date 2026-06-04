@@ -176,16 +176,6 @@ interface LearningCurriculum {
   curriculum: LearningWeek[];
 }
 
-interface EmailQueueStatus {
-  healthy: boolean;
-  message: string;
-  activeJobs?: number;
-  waitingJobs?: number;
-  completedJobs?: number;
-  failedJobs?: number;
-  delayedJobs?: number;
-}
-
 export default function RankBuddyTab() {
   const { data: session } = useSession();
   const [activeView, setActiveView] = useState<'chat' | 'challenges' | 'analytics' | 'replay'>('chat');
@@ -195,8 +185,6 @@ export default function RankBuddyTab() {
   const [badges, setBadges] = useState<BadgeData[]>([]);
   const [improvementData, setImprovementData] = useState<ImprovementData | null>(null);
   const [curriculumData, setCurriculumData] = useState<LearningCurriculum | null>(null);
-  const [emailQueueStatus, setEmailQueueStatus] = useState<EmailQueueStatus | null>(null);
-  const [emailQueueLoading, setEmailQueueLoading] = useState(true);
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [heatmapStats, setHeatmapStats] = useState<any>(null);
   const [heatmapPeriod, setHeatmapPeriod] = useState<'30d' | '90d' | '1y'>('30d');
@@ -207,33 +195,6 @@ export default function RankBuddyTab() {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [replayLoading, setReplayLoading] = useState(false);
 
-  async function loadEmailQueueStatus() {
-    try {
-      setEmailQueueLoading(true);
-      const response = await fetch('/api/health/email-queue');
-      if (response.ok) {
-        const result = await response.json();
-        const payload = result?.data || result;
-        setEmailQueueStatus({
-          healthy: payload.healthy ?? true,
-          message: payload.message || 'Email queue is healthy',
-          activeJobs: payload.activeJobs,
-          waitingJobs: payload.waitingJobs,
-          completedJobs: payload.completedJobs,
-          failedJobs: payload.failedJobs,
-          delayedJobs: payload.delayedJobs,
-        });
-      } else {
-        const errorBody = await response.json().catch(() => null);
-        setEmailQueueStatus({ healthy: false, message: errorBody?.message || 'Unable to load email queue status' });
-      }
-    } catch (error) {
-      console.error('Error loading email queue status:', error);
-      setEmailQueueStatus({ healthy: false, message: 'Unable to connect to email queue status endpoint' });
-    } finally {
-      setEmailQueueLoading(false);
-    }
-  }
 
   const loadHeatmapData = useCallback(async (period: '30d' | '90d' | '1y') => {
     try {
@@ -298,8 +259,7 @@ export default function RankBuddyTab() {
         console.debug('Curriculum load failed', err);
       }
 
-      // Load email queue status and monitoring info
-      await loadEmailQueueStatus();
+
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
@@ -805,49 +765,7 @@ export default function RankBuddyTab() {
           </CardContent>
         </Card>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Flame className="h-6 w-6 text-orange-600" />
-            <span>Email Queue Status</span>
-          </CardTitle>
-          <CardDescription>
-            Monitor email retry processing and queue health.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {emailQueueLoading ? (
-            <div className="h-24 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-2"></div>
-                <p className="text-gray-500">Checking queue status...</p>
-              </div>
-            </div>
-          ) : emailQueueStatus ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-lg border p-4 bg-white/80 dark:bg-slate-950/80">
-                <p className="text-sm text-gray-500">Status</p>
-                <p className={`font-semibold ${emailQueueStatus.healthy ? 'text-green-600' : 'text-red-600'}`}>
-                  {emailQueueStatus.healthy ? 'Healthy' : 'Issue detected'}
-                </p>
-                <p className="text-sm text-gray-600 mt-2">{emailQueueStatus.message}</p>
-              </div>
-              <div className="rounded-lg border p-4 bg-white/80 dark:bg-slate-950/80">
-                <p className="text-sm text-gray-500">Queue Metrics</p>
-                <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-700 dark:text-gray-300">
-                  <div>Active: {emailQueueStatus.activeJobs ?? 0}</div>
-                  <div>Waiting: {emailQueueStatus.waitingJobs ?? 0}</div>
-                  <div>Completed: {emailQueueStatus.completedJobs ?? 0}</div>
-                  <div>Failed: {emailQueueStatus.failedJobs ?? 0}</div>
-                  <div>Delayed: {emailQueueStatus.delayedJobs ?? 0}</div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500">Email queue information is unavailable.</div>
-          )}
-        </CardContent>
-      </Card>
+
       {curriculumData && (
         <Card>
           <CardHeader>
