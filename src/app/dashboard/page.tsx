@@ -7,8 +7,7 @@ import { useEffect, useState } from 'react';
 import type { Session } from 'next-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Clock, Timer, User, Trophy, Bot } from 'lucide-react';
 import StopwatchTab from '@/components/dashboard/StopwatchTab';
 import TimerTab from '@/components/dashboard/TimerTab';
 import TracksheetTab from '@/components/dashboard/TracksheetTab';
@@ -20,6 +19,8 @@ import SocialTab from '@/components/dashboard/SocialTab';
 import RankBuddyTab from '@/components/dashboard/RankBuddyTab';
 import Navbar from '@/components/Navbar';
 import { dashboardSettingsItems } from '@/components/navbar-config';
+import { TextScramble } from '@/components/ui/text-scramble';
+import FooterSection from '@/components/ui/footer';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -72,20 +73,30 @@ export default function Dashboard() {
 
   if (status === 'loading' && !loadingTimeout) {
     return (
-      <div className="page-shell flex min-h-screen items-center justify-center">
-        <div className="h-24 w-24 animate-spin rounded-full border-4 border-primary/20 border-b-primary"></div>
+      <div className="premium-shell flex min-h-screen items-center justify-center relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="premium-grid pointer-events-none absolute inset-0" aria-hidden="true" />
+        <div className="relative z-10 text-center">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-cyan-500/20 border-b-cyan-400 mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground font-light tracking-wide animate-pulse">Loading secure dashboard session...</p>
+        </div>
       </div>
     );
   }
 
   if (status === 'loading' && loadingTimeout) {
     return (
-      <div className="page-shell flex min-h-screen items-center justify-center px-4">
-        <div className="glass-panel max-w-md rounded-xl p-8 text-center">
-          <div className="mb-4 text-xl font-semibold text-destructive">Loading Timeout</div>
-          <p className="mb-4 text-muted-foreground">Session loading took too long. Please check your environment variables.</p>
+      <div className="premium-shell flex min-h-screen items-center justify-center px-4 relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="premium-grid pointer-events-none absolute inset-0" aria-hidden="true" />
+        <div className="relative z-10 glass-tier-4 max-w-md rounded-3xl p-8 border border-white/10 text-center shadow-2xl">
+          <div className="mb-4 text-xl font-bold text-rose-500">Loading Timeout</div>
+          <p className="mb-6 text-sm text-muted-foreground font-light leading-relaxed">
+            Session loading took too long. Please verify your environment configuration and try again.
+          </p>
           <Button
             onClick={() => router.push('/login')}
+            className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold rounded-full py-2.5"
           >
             Go to Login
           </Button>
@@ -105,81 +116,116 @@ export default function Dashboard() {
   const safeSession = currentSession;
 
   return (
-    <div className="page-shell min-h-screen">
-      <Navbar
-        variant="dashboard"
-        logoHref="/dashboard"
-        onLogoClick={() => setActiveTab('stopwatch')}
-        user={safeSession.user ?? undefined}
-        onProfileClick={() => setActiveTab('profile')}
-        showSettings
-        settingsItems={dashboardSettingsItems}
-        onSettingsSelect={setActiveTab}
-      />
+    <div className="premium-shell page-enter min-h-screen flex flex-col justify-between relative overflow-x-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/3 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="premium-grid pointer-events-none absolute inset-0" aria-hidden="true" />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="mb-4 sm:mb-6 lg:mb-8">
-          <h2 className="text-xl font-bold text-foreground sm:text-2xl lg:text-3xl">Dashboard</h2>
-          <p className="mt-1 text-xs text-muted-foreground sm:mt-2 sm:text-sm lg:text-base">
-            Track your competitive programming progress and performance
-          </p>
-        </div>
+      <div className="relative z-10 w-full flex flex-col flex-1">
+        <Navbar
+          variant="dashboard"
+          logoHref="/dashboard"
+          onLogoClick={() => setActiveTab('stopwatch')}
+          user={safeSession.user ?? undefined}
+          onProfileClick={() => setActiveTab('profile')}
+          showSettings
+          settingsItems={dashboardSettingsItems}
+          onSettingsSelect={setActiveTab}
+        />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="inline-flex h-auto w-full flex-wrap items-center justify-center gap-1 overflow-x-auto p-1 sm:justify-start sm:gap-2 sm:p-2 lg:gap-4">
-            <TabsTrigger value="stopwatch" className="flex-shrink-0 whitespace-nowrap px-2 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm lg:px-6 lg:py-3 lg:text-base">Stopwatch</TabsTrigger>
-            <TabsTrigger value="timer" className="flex-shrink-0 whitespace-nowrap px-2 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm lg:px-6 lg:py-3 lg:text-base">Timer</TabsTrigger>
-            <TabsTrigger value="profile" className="flex-shrink-0 whitespace-nowrap px-2 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm lg:px-6 lg:py-3 lg:text-base">Profile</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="hidden flex-shrink-0 whitespace-nowrap px-2 py-1 text-xs sm:inline-flex sm:px-4 sm:py-2 sm:text-sm lg:px-6 lg:py-3 lg:text-base">Leaderboard</TabsTrigger>
-            <TabsTrigger value="rankbuddy" className="hidden flex-shrink-0 whitespace-nowrap px-2 py-1 text-xs sm:inline-flex sm:px-4 sm:py-2 sm:text-sm lg:px-6 lg:py-3 lg:text-base">Rank Buddy</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="stopwatch">
-            {activeTab === 'stopwatch' ? <StopwatchTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="timer">
-            {activeTab === 'timer' ? <TimerTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="tracksheet">
-            {activeTab === 'tracksheet' ? <TracksheetTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="profile">
-            {activeTab === 'profile' ? <ProfileTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="graphs">
-            {activeTab === 'graphs' ? <GraphsTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="leaderboard">
-            {activeTab === 'leaderboard' ? <LeaderboardTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="rankbuddy">
-            {activeTab === 'rankbuddy' ? <RankBuddyTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="codeforces">
-            {activeTab === 'codeforces' ? <CodeforcesTab /> : null}
-          </TabsContent>
-
-          <TabsContent value="social">
-            {activeTab === 'social' ? <SocialTab /> : null}
-          </TabsContent>
-        </Tabs>
-
-        {/* Footer */}
-        <footer className="mt-8 border-t border-border/70 py-6 sm:mt-12 sm:py-8">
-          <div className="text-center text-xs text-muted-foreground sm:text-sm">
-            <p>&copy; {new Date().getFullYear()} Rank Time. All rights reserved.</p>
-            <p className="mt-1 sm:mt-2">Developed by Rafiul Hasan, CSE, BRACU</p>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 flex-1 w-full">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-2xl font-black text-foreground tracking-tight sm:text-3xl lg:text-4xl">
+              <TextScramble duration={0.6}>Dashboard</TextScramble>
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground font-light sm:mt-2 sm:text-sm lg:text-base">
+              Track your competitive programming progress and performance
+            </p>
           </div>
-        </footer>
-      </main>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="flex items-center justify-start gap-1 bg-white/5 dark:bg-black/20 border border-white/10 dark:border-white/5 p-1 rounded-2xl w-full overflow-x-auto scrollbar-none shadow-lg">
+              <TabsTrigger
+                value="stopwatch"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
+              >
+                <Clock className="w-4 h-4" />
+                Stopwatch
+              </TabsTrigger>
+              <TabsTrigger
+                value="timer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
+              >
+                <Timer className="w-4 h-4" />
+                Timer
+              </TabsTrigger>
+              <TabsTrigger
+                value="profile"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </TabsTrigger>
+              <TabsTrigger
+                value="leaderboard"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
+              >
+                <Trophy className="w-4 h-4" />
+                Leaderboard
+              </TabsTrigger>
+              <TabsTrigger
+                value="rankbuddy"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
+              >
+                <Bot className="w-4 h-4" />
+                Rank Buddy
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="stopwatch" className="outline-none">
+              {activeTab === 'stopwatch' ? <StopwatchTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="timer" className="outline-none">
+              {activeTab === 'timer' ? <TimerTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="tracksheet" className="outline-none">
+              {activeTab === 'tracksheet' ? <TracksheetTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="profile" className="outline-none">
+              {activeTab === 'profile' ? <ProfileTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="graphs" className="outline-none">
+              {activeTab === 'graphs' ? <GraphsTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="leaderboard" className="outline-none">
+              {activeTab === 'leaderboard' ? <LeaderboardTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="rankbuddy" className="outline-none">
+              {activeTab === 'rankbuddy' ? <RankBuddyTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="codeforces" className="outline-none">
+              {activeTab === 'codeforces' ? <CodeforcesTab /> : null}
+            </TabsContent>
+
+            <TabsContent value="social" className="outline-none">
+              {activeTab === 'social' ? <SocialTab /> : null}
+            </TabsContent>
+          </Tabs>
+        </main>
+
+        {/* Unified Premium Footer */}
+        <FooterSection />
+      </div>
     </div>
   );
 }
