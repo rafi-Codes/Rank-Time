@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Target, Calendar, TrendingUp, Code, Award, Link, ExternalLink, UserCheck, UserX } from 'lucide-react';
+import { Trophy, Target, Calendar, TrendingUp, Code, Award, ExternalLink, UserCheck, UserX, Zap, BarChart3, AlertCircle, Flame } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 interface CodeforcesUser {
@@ -42,7 +42,46 @@ interface CodeforcesSubmission {
   creationTimeSeconds: number;
 }
 
-interface CodeforcesStats {
+interface CategoryStats {
+  categoryName: string;
+  totalSolved: number;
+  totalAttempted: number;
+  successRate: number;
+  averageTime: number;
+}
+
+interface RatingStats {
+  rating: string;
+  count: number;
+  solved: number;
+  successRate: number;
+  avgTimeMillis: number;
+  avgMemoryBytes: number;
+}
+
+interface LanguageStats {
+  language: string;
+  count: number;
+  accepted: number;
+  successRate: number;
+}
+
+interface PracticeIntensity {
+  submissionsPerDay: number;
+  daysActive: number;
+  consistency: number;
+}
+
+interface RatingTendency {
+  preferredRatingRange: { min: number; max: number };
+  averageSolvedRating: number;
+  easyProblems: number;
+  mediumProblems: number;
+  hardProblems: number;
+  veryHardProblems: number;
+}
+
+interface EnhancedCodeforcesStats {
   solvedProblems: number;
   totalSubmissions: number;
   acceptedSubmissions: number;
@@ -52,17 +91,33 @@ interface CodeforcesStats {
   runtimeError: number;
   compilationError: number;
   recentSubmissions: CodeforcesSubmission[];
+  categoryBreakdown: CategoryStats[];
+  ratingDistribution: RatingStats[];
+  languagePreference: LanguageStats[];
+  ratingTendency: RatingTendency;
+  practiceIntensity: PracticeIntensity;
+  successRateByRating: Record<string, number>;
+  verdictDistribution: Record<string, number>;
+  topProblems: Array<{
+    name: string;
+    rating?: number;
+    tags?: string[];
+    index: string;
+    verdicts: Record<string, number>;
+  }>;
+  timeSpentByRating: Record<string, { totalTime: number; count: number }>;
 }
 
 export default function CodeforcesTab() {
   const { data: session } = useSession();
   const [handle, setHandle] = useState('');
   const [userData, setUserData] = useState<CodeforcesUser | null>(null);
-  const [stats, setStats] = useState<CodeforcesStats | null>(null);
+  const [stats, setStats] = useState<EnhancedCodeforcesStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [connectedHandle, setConnectedHandle] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'ratings' | 'problems'>('overview');
 
   useEffect(() => {
     const storedHandle = localStorage.getItem('ranktime-codeforces-handle');
@@ -101,6 +156,7 @@ export default function CodeforcesTab() {
 
       setUserData(data.user);
       setStats(data.stats);
+      setActiveTab('overview');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch Codeforces data');
     } finally {
@@ -112,7 +168,6 @@ export default function CodeforcesTab() {
     const checkConnectionStatus = async () => {
       if (!session?.user?.email) return;
 
-      // Only check server if we don't have a locally stored handle
       const storedHandle = localStorage.getItem('ranktime-codeforces-handle');
       if (storedHandle) return;
 
@@ -124,7 +179,6 @@ export default function CodeforcesTab() {
           if (data.isConnected && data.handle) {
             setConnectedHandle(data.handle);
             setHandle(data.handle);
-            // Auto-fetch data for connected users
             fetchCodeforcesData(data.handle);
           }
         }
@@ -134,7 +188,7 @@ export default function CodeforcesTab() {
     };
 
     checkConnectionStatus();
-  }, [session]);
+  }, [session, fetchCodeforcesData]);
 
   const connectCodeforces = async () => {
     if (!handle.trim()) {
@@ -187,7 +241,6 @@ export default function CodeforcesTab() {
     }
   };
 
- 
   const getRankColor = (rank?: string) => {
     if (!rank) return 'bg-gray-500';
     const rankLower = rank.toLowerCase();
@@ -207,6 +260,23 @@ export default function CodeforcesTab() {
     return new Date(timestamp * 1000).toLocaleDateString();
   };
 
+  const getConsistencyLevel = (score: number) => {
+    if (score >= 90) return { label: 'Extreme', color: 'bg-red-500' };
+    if (score >= 70) return { label: 'Very High', color: 'bg-orange-500' };
+    if (score >= 50) return { label: 'High', color: 'bg-yellow-500' };
+    if (score >= 30) return { label: 'Moderate', color: 'bg-blue-500' };
+    return { label: 'Low', color: 'bg-gray-500' };
+  };
+
+  const getDifficultyColor = (rating?: string) => {
+    if (!rating) return 'text-gray-500';
+    if (rating.includes('Easy')) return 'text-green-500';
+    if (rating.includes('Medium')) return 'text-yellow-500';
+    if (rating.includes('Hard')) return 'text-red-500';
+    if (rating.includes('Very Hard')) return 'text-purple-500';
+    return 'text-gray-500';
+  };
+
   return (
     <div className="space-y-6">
       {/* Connection Status */}
@@ -220,7 +290,7 @@ export default function CodeforcesTab() {
           <CardDescription>
             {isConnected 
               ? `Connected to Codeforces handle: ${connectedHandle}`
-              : 'Connect your Codeforces account to automatically sync data'
+              : 'Connect your Codeforces account to sync enhanced analytics'
             }
           </CardDescription>
         </CardHeader>
@@ -252,8 +322,6 @@ export default function CodeforcesTab() {
               <Button
                 onClick={disconnectCodeforces}
                 variant="destructive"
-                className="justify-center"
-                icon={<UserX className="h-4 w-4 shrink-0" aria-hidden="true" />}
               >
                 Disconnect
               </Button>
@@ -267,15 +335,15 @@ export default function CodeforcesTab() {
 
       {/* User Info */}
       {userData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                User Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              User Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-center gap-4">
                 {userData.avatar && (
                   <img
@@ -287,151 +355,406 @@ export default function CodeforcesTab() {
                 <div>
                   <h3 className="text-xl font-bold">{userData.handle}</h3>
                   {userData.rank && (
-                    <Badge className={`${getRankColor(userData.rank)} text-white`}>
+                    <Badge className={`${getRankColor(userData.rank)} text-white mt-2`}>
                       {userData.rank}
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Current Rating</p>
-                  <p className="text-2xl font-bold">{userData.rating || 'Unrated'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Max Rating</p>
-                  <p className="text-2xl font-bold">{userData.maxRating || 'N/A'}</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Current Rating</p>
+                <p className="text-2xl font-bold">{userData.rating || 'Unrated'}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Max Rank</p>
-                  <p className="font-medium">{userData.maxRank || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Contribution</p>
-                  <p className="font-medium">{userData.contribution || 0}</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Max Rating</p>
+                <p className="text-2xl font-bold">{userData.maxRating || 'N/A'}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Registered</p>
-                  <p className="font-medium">{formatDate(userData.registrationTimeSeconds)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Last Online</p>
-                  <p className="font-medium">{formatDate(userData.lastOnlineTimeSeconds)}</p>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Contribution</p>
+                <p className="text-2xl font-bold text-blue-600">{userData.contribution || 0}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Statistics */}
-          {stats && (
+      {/* Statistics Tabs */}
+      {stats && (
+        <>
+          {/* Tab Navigation */}
+          <div className="flex gap-2 border-b">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'overview'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4 inline mr-2" />
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'categories'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Target className="h-4 w-4 inline mr-2" />
+              Categories
+            </button>
+            <button
+              onClick={() => setActiveTab('ratings')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'ratings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <TrendingUp className="h-4 w-4 inline mr-2" />
+              Ratings
+            </button>
+            <button
+              onClick={() => setActiveTab('problems')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'problems'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Zap className="h-4 w-4 inline mr-2" />
+              Problems
+            </button>
+          </div>
+
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Problems Solved</p>
+                      <p className="text-3xl font-bold text-green-600">{stats.solvedProblems}</p>
+                      <p className="text-xs text-gray-500 mt-2">{stats.totalSubmissions} submissions</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Success Rate</p>
+                      <p className="text-3xl font-bold text-blue-600">
+                        {Math.round((stats.acceptedSubmissions / stats.totalSubmissions) * 100)}%
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">{stats.acceptedSubmissions} accepted</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Avg Rating</p>
+                      <p className="text-3xl font-bold text-purple-600">{stats.ratingTendency.averageSolvedRating}</p>
+                      <p className="text-xs text-gray-500 mt-2">Target range: {stats.ratingTendency.preferredRatingRange.min}-{stats.ratingTendency.preferredRatingRange.max}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Consistency</p>
+                      <p className={`text-3xl font-bold ${getConsistencyLevel(stats.practiceIntensity.consistency).color}`}>
+                        {stats.practiceIntensity.consistency}/100
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">{getConsistencyLevel(stats.practiceIntensity.consistency).label}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Practice Intensity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    Practice Intensity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Submissions/Day</p>
+                    <p className="text-2xl font-bold text-orange-600">{stats.practiceIntensity.submissionsPerDay.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Days Active</p>
+                    <p className="text-2xl font-bold text-blue-600">{stats.practiceIntensity.daysActive}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Consistency</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div
+                        className={`h-2 rounded-full ${getConsistencyLevel(stats.practiceIntensity.consistency).color}`}
+                        style={{ width: `${stats.practiceIntensity.consistency}%` }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Difficulty Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    Difficulty Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-green-700 dark:text-green-300 mb-1">Easy</p>
+                      <p className="text-2xl font-bold text-green-600">{stats.ratingTendency.easyProblems}</p>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-1">Medium</p>
+                      <p className="text-2xl font-bold text-yellow-600">{stats.ratingTendency.mediumProblems}</p>
+                    </div>
+                    <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Hard</p>
+                      <p className="text-2xl font-bold text-orange-600">{stats.ratingTendency.hardProblems}</p>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-300 mb-1">Very Hard</p>
+                      <p className="text-2xl font-bold text-red-600">{stats.ratingTendency.veryHardProblems}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Verdict Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Submission Verdicts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {Object.entries(stats.verdictDistribution).map(([verdict, count]) => (
+                      <div key={verdict} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{verdict}</p>
+                        <p className="text-lg font-bold">{count}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Languages */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5" />
+                    Language Proficiency
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {stats.languagePreference.slice(0, 5).map((lang) => (
+                      <div key={lang.language} className="flex items-center justify-between">
+                        <span className="font-medium">{lang.language}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-40 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{ width: `${lang.successRate}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+                            {lang.successRate}% ({lang.accepted}/{lang.count})
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Categories Tab */}
+          {activeTab === 'categories' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {stats.categoryBreakdown.map((category) => (
+                <Card key={category.categoryName}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{category.categoryName}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Problems Solved</span>
+                      <span className="font-bold text-green-600">{category.totalSolved}/{category.totalAttempted}</span>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Success Rate</span>
+                        <span className="text-sm font-medium">{category.successRate}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full"
+                          style={{ width: `${category.successRate}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Ratings Tab */}
+          {activeTab === 'ratings' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance by Rating</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {stats.ratingDistribution.map((rating) => (
+                  <div key={rating.rating}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <span className={`font-medium ${getDifficultyColor(rating.rating)}`}>{rating.rating}</span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          {rating.solved}/{rating.count} • {rating.successRate}% success • Avg: {(rating.avgTimeMillis / 1000).toFixed(1)}s
+                        </p>
+                      </div>
+                      <Badge variant="secondary">{rating.successRate}%</Badge>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full"
+                        style={{ width: `${rating.successRate}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Problems Tab */}
+          {activeTab === 'problems' && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Submission Statistics
+                  <Zap className="h-5 w-5" />
+                  Top Challenging Problems
                 </CardTitle>
+                <CardDescription>Problems you've attempted most frequently</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Problems Solved</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.solvedProblems}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Submissions</p>
-                    <p className="text-2xl font-bold">{stats.totalSubmissions}</p>
-                  </div>
-                </div>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.topProblems.slice(0, 10).map((problem, idx) => {
+                    const totalAttempts = Object.values(problem.verdicts).reduce((a, b) => a + b, 0);
+                    return (
+                      <div key={problem.index} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-500">{idx + 1}.</span>
+                              <h4 className="font-medium">{problem.name}</h4>
+                            </div>
+                            {problem.tags && problem.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {problem.tags.slice(0, 3).map((tag) => (
+                                  <Badge key={tag} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {problem.rating && (
+                            <Badge className="ml-2 bg-purple-500 text-white">{problem.rating}</Badge>
+                          )}
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Accepted</p>
-                    <p className="text-lg font-medium text-green-600">{stats.acceptedSubmissions}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Wrong Answer</p>
-                    <p className="text-lg font-medium text-red-600">{stats.wrongAnswer}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">TLE</p>
-                    <p className="text-lg font-medium text-orange-600">{stats.timeLimitExceeded}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">MLE</p>
-                    <p className="text-lg font-medium text-purple-600">{stats.memoryLimitExceeded}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Runtime Error</p>
-                    <p className="text-lg font-medium text-yellow-600">{stats.runtimeError}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Compilation Error</p>
-                    <p className="text-lg font-medium text-gray-600">{stats.compilationError}</p>
-                  </div>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {Object.entries(problem.verdicts).map(([verdict, count]) => (
+                            <span
+                              key={verdict}
+                              className={`px-2 py-1 rounded ${
+                                verdict === 'OK'
+                                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
+                                  : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100'
+                              }`}
+                            >
+                              {verdict}: {count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           )}
-        </div>
-      )}
 
-      {/* Recent Submissions */}
-      {stats?.recentSubmissions && stats.recentSubmissions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Recent Submissions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.recentSubmissions.slice(0, 10).map((submission) => (
-                <div key={submission.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{submission.problem.name}</h4>
-                      {submission.problem.contestId && (
-                        <Badge variant="outline">
-                          {submission.problem.contestId}{submission.problem.index}
-                        </Badge>
-                      )}
-                      {submission.problem.rating && (
-                        <Badge variant="secondary">
-                          {submission.problem.rating}
-                        </Badge>
-                      )}
+          {/* Recent Submissions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Recent Submissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.recentSubmissions.slice(0, 10).map((submission) => (
+                  <div key={submission.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{submission.problem.name}</h4>
+                        {submission.problem.contestId && (
+                          <Badge variant="outline">
+                            {submission.problem.contestId}{submission.problem.index}
+                          </Badge>
+                        )}
+                        {submission.problem.rating && (
+                          <Badge variant="secondary">
+                            {submission.problem.rating}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        <span>{submission.programmingLanguage}</span>
+                        <span>{new Date(submission.creationTimeSeconds * 1000).toLocaleDateString()}</span>
+                        {submission.contestId && (
+                          <a
+                            href={`https://codeforces.com/contest/${submission.contestId}/problem/${submission.problem.index}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      <span>{submission.programmingLanguage}</span>
-                      <span>{new Date(submission.creationTimeSeconds * 1000).toLocaleDateString()}</span>
-                      {submission.contestId && (
-                        <a
-                          href={`https://codeforces.com/contest/${submission.contestId}/problem/${submission.problem.index}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          View Problem
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
                     <Badge
                       className={
                         submission.verdict === 'OK'
@@ -446,9 +769,18 @@ export default function CodeforcesTab() {
                       {submission.verdict}
                     </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Loading State */}
+      {loading && !userData && (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-gray-600 dark:text-gray-400">Loading Codeforces data...</p>
           </CardContent>
         </Card>
       )}
@@ -461,10 +793,20 @@ export default function CodeforcesTab() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <p>✨ <strong>Enhanced Codeforces Analytics</strong></p>
               <p>1. Enter your Codeforces handle in the input field above</p>
-              <p>2. Click Fetch Data to retrieve your profile and submission statistics</p>
-              <p>3. View your rating, rank, solved problems, and submission breakdown</p>
-              <p>4. Data is fetched directly from the Codeforces API</p>
+              <p>2. Click "Connect Account" to retrieve your complete profile and analytics</p>
+              <p>3. View:</p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                <li>Submission statistics and success rates</li>
+                <li>Category expertise breakdown (7 categories)</li>
+                <li>Performance by rating difficulty</li>
+                <li>Programming language proficiency</li>
+                <li>Practice intensity and consistency score</li>
+                <li>Most challenging problems</li>
+                <li>Recent submission history</li>
+              </ul>
+              <p>4. Data is fetched from the Codeforces API and updated on refresh</p>
             </div>
           </CardContent>
         </Card>
