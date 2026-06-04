@@ -29,6 +29,7 @@ import { unwrapApiData, unwrapApiList } from '@/lib/parseApiResponse';
 import { AIInput } from '@/components/ui/ai-input';
 import { ShiningText } from '@/components/ui/shining-text';
 import { MessageLoading } from '@/components/ui/message-loading';
+import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap';
 
 function formatMessageContent(content: string) {
   if (!content) return null;
@@ -198,6 +199,8 @@ export default function RankBuddyTab() {
   const [emailQueueLoading, setEmailQueueLoading] = useState(true);
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [heatmapStats, setHeatmapStats] = useState<any>(null);
+  const [heatmapPeriod, setHeatmapPeriod] = useState<'30d' | '90d' | '1y'>('30d');
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -232,12 +235,10 @@ export default function RankBuddyTab() {
     }
   }
 
-  const loadUserData = useCallback(async () => {
+  const loadHeatmapData = useCallback(async (period: '30d' | '90d' | '1y') => {
     try {
-      setLoading(true);
-
-      // Load activity heatmap
-      const heatmapResponse = await fetch('/api/user/activity-heatmap');
+      setHeatmapLoading(true);
+      const heatmapResponse = await fetch(`/api/user/activity-heatmap?period=${period}`);
       if (heatmapResponse.ok) {
         const heatmapResult = await heatmapResponse.json();
         const heatmapPayload = unwrapApiData<{
@@ -258,6 +259,24 @@ export default function RankBuddyTab() {
         );
         setHeatmapStats(heatmapRecord?.statistics ?? null);
       }
+    } catch (error) {
+      console.error('Error loading activity heatmap:', error);
+    } finally {
+      setHeatmapLoading(false);
+    }
+  }, []);
+
+  const handlePeriodChange = useCallback(async (newPeriod: '30d' | '90d' | '1y') => {
+    setHeatmapPeriod(newPeriod);
+    await loadHeatmapData(newPeriod);
+  }, [loadHeatmapData]);
+
+  const loadUserData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Load activity heatmap default (30 days)
+      await loadHeatmapData('30d');
 
       // Load improvement path
       const improvementResponse = await fetch('/api/user/improvement-path');
@@ -286,7 +305,7 @@ export default function RankBuddyTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadHeatmapData]);
 
   const loadChallenges = useCallback(async () => {
     try {
@@ -710,82 +729,13 @@ export default function RankBuddyTab() {
 
   const renderAnalyticsView = () => (
     <div className="space-y-6">
-      {/* Activity Heatmap */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <BarChart3 className="h-6 w-6 text-green-600" />
-            <span>Activity Heatmap</span>
-          </CardTitle>
-          <CardDescription>
-            Your coding activity over the last 30 days
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="h-64 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
-                <p className="text-gray-500">Loading activity data...</p>
-              </div>
-            </div>
-          ) : heatmapData.length > 0 ? (
-            <div className="space-y-4">
-              {/* Heatmap Grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {heatmapData.slice(-35).map((day, index) => {
-                  const intensity = Math.min(day.count / 5, 1); // Max intensity at 5 activities
-                  return (
-                    <div
-                      key={day.date}
-                      className={`w-3 h-3 rounded-sm cursor-pointer transition-colors ${
-                        intensity === 0 ? 'bg-gray-200 dark:bg-gray-700' :
-                        intensity < 0.25 ? 'bg-green-200 dark:bg-green-800' :
-                        intensity < 0.5 ? 'bg-green-300 dark:bg-green-700' :
-                        intensity < 0.75 ? 'bg-green-400 dark:bg-green-600' :
-                        'bg-green-500 dark:bg-green-500'
-                      }`}
-                      title={`${day.date}: ${day.count} activities, ${day.points} points`}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Statistics */}
-              {heatmapStats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{heatmapStats.totalActivities}</p>
-                    <p className="text-sm text-gray-500">Total Activities</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{heatmapStats.totalPoints}</p>
-                    <p className="text-sm text-gray-500">Total Points</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">{heatmapStats.averageDaily}</p>
-                    <p className="text-sm text-gray-500">Avg Daily</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-orange-600">{heatmapStats.mostActiveDay ? new Date(heatmapStats.mostActiveDay).toLocaleDateString() : 'N/A'}</p>
-                    <p className="text-sm text-gray-500">Most Active Day</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">No activity data available</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Start coding to see your activity heatmap!
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ActivityHeatmap
+        data={heatmapData}
+        stats={heatmapStats}
+        loading={heatmapLoading}
+        period={heatmapPeriod}
+        onPeriodChange={handlePeriodChange}
+      />
 
       {/* Improvement Path */}
       {improvementData && (

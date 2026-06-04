@@ -127,6 +127,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Comp = asChild ? Slot : "button"
     const isDisabled = disabled || isLoading
+    const filterId = "filter-" + React.useId().replace(/:/g, "")
 
     if (asChild) {
       return (
@@ -161,12 +162,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             dark:shadow-[0_0_8px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3.5px_rgba(255,255,255,0.09),inset_-3px_-3px_0.5px_-3.5px_rgba(255,255,255,0.85),inset_1px_1px_1px_-0.5px_rgba(255,255,255,0.6),inset_-1px_-1px_1px_-0.5px_rgba(255,255,255,0.6),inset_0_0_6px_6px_rgba(255,255,255,0.12),inset_0_0_2px_2px_rgba(255,255,255,0.06),0_0_12px_rgba(0,0,0,0.15)]" />
             <div
               className="absolute top-0 left-0 isolate -z-10 h-full w-full overflow-hidden rounded-[inherit]"
-              style={{ backdropFilter: 'url("#container-glass")' }}
+              style={{ backdropFilter: `blur(4px) url("#${filterId}")` }}
             />
-            <svg className="hidden">
+            <svg style={{ position: "absolute", width: 0, height: 0, pointerEvents: "none", opacity: 0 }}>
               <defs>
                 <filter
-                  id="container-glass"
+                  id={filterId}
                   x="-20%"
                   y="-20%"
                   width="140%"
@@ -187,10 +188,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     scale="12"
                     xChannelSelector="R"
                     yChannelSelector="B"
-                    result="displaced"
                   />
-                  <feGaussianBlur in="displaced" stdDeviation="2" result="finalBlur" />
-                  <feComposite in="finalBlur" in2="finalBlur" operator="over" />
                 </filter>
               </defs>
             </svg>
