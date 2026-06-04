@@ -51,6 +51,7 @@ module.exports = {
       animation: {
         flip: "flip 6s infinite steps(2, end)",
         rotate: "rotate 3s linear infinite both",
+        'fade-scale': 'fade-scale 0.2s ease-out',
       },
       keyframes: {
         flip: {
@@ -58,6 +59,16 @@ module.exports = {
         },
         rotate: {
           to: { transform: "rotate(90deg)" },
+        },
+        'fade-scale': {
+          '0%': { 
+            opacity: '0',
+            transform: 'translateY(-50%) scale(0.95)'
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'translateY(-50%) scale(1)'
+          }
         },
       },
     },

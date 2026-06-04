@@ -26,6 +26,32 @@ import {
   XCircle
 } from 'lucide-react';
 import { unwrapApiData, unwrapApiList } from '@/lib/parseApiResponse';
+import { AIInput } from '@/components/ui/ai-input';
+import { ShiningText } from '@/components/ui/shining-text';
+import { MessageLoading } from '@/components/ui/message-loading';
+
+function formatMessageContent(content: string) {
+  if (!content) return null;
+  const lines = content.split('\n');
+  return lines.map((line, lineIdx) => {
+    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    const formattedLine = parts.map((part, partIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={partIdx} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <strong key={partIdx} className="font-bold text-foreground">{part.slice(1, -1)}</strong>;
+      }
+      return part;
+    });
+
+    return (
+      <span key={lineIdx} className="block min-h-[1em]">
+        {formattedLine}
+      </span>
+    );
+  });
+}
 
 interface HeatmapData {
   date: string;
@@ -163,7 +189,6 @@ export default function RankBuddyTab() {
   const { data: session } = useSession();
   const [activeView, setActiveView] = useState<'chat' | 'challenges' | 'analytics' | 'replay'>('chat');
   const [messages, setMessages] = useState<Array<{role: 'user' | 'assistant', content: string, timestamp: Date, provider?: string, fallback?: boolean}>>([]);
-  const [currentQuestion, setCurrentQuestion] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [badges, setBadges] = useState<BadgeData[]>([]);
@@ -349,19 +374,16 @@ export default function RankBuddyTab() {
     }
   };
 
-  // `initializeChat` is defined earlier as a stable `useCallback`.
-
-  const sendMessage = async () => {
-    if (!currentQuestion.trim()) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim()) return;
 
     const userMessage = {
       role: 'user' as const,
-      content: currentQuestion,
+      content: text,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setCurrentQuestion('');
     setIsTyping(true);
 
     try {
@@ -371,7 +393,7 @@ export default function RankBuddyTab() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: currentQuestion,
+          message: text,
           context: messages.slice(-5) // Last 5 messages for context
         }),
       });
@@ -445,8 +467,10 @@ export default function RankBuddyTab() {
                     ? 'bg-primary text-primary-foreground'
                     : 'border border-border bg-card text-card-foreground shadow-sm'
                 }`}>
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  <div className="mt-1 flex items-center justify-between gap-2">
+                  <div className="text-sm leading-relaxed space-y-1">
+                    {formatMessageContent(message.content)}
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 border-t border-border/10 pt-1">
                     <p className={`text-xs ${message.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </p>
@@ -466,33 +490,19 @@ export default function RankBuddyTab() {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="rounded-lg border border-border bg-card px-4 py-2">
-                  <div className="flex space-x-1">
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]"></div>
-                  </div>
+                <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm flex items-center space-x-3">
+                  <MessageLoading />
+                  <ShiningText text="RankBuddy is thinking..." />
                 </div>
               </div>
             )}
           </div>
-          <div className="flex space-x-2">
-            <Input
-              value={currentQuestion}
-              onChange={(e) => setCurrentQuestion(e.target.value)}
+          <div className="mt-2">
+            <AIInput
               placeholder="Ask me about a coding problem..."
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              className="flex-1"
+              onSubmit={sendMessage}
+              className="w-full"
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!currentQuestion.trim() || isTyping}
-              size="icon"
-              className="shrink-0"
-              aria-label="Send message"
-            >
-              <MessageSquare className="h-4 w-4" aria-hidden="true" />
-            </Button>
           </div>
         </CardContent>
       </Card>
