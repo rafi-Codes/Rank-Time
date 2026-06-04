@@ -5,9 +5,10 @@ import { useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { Session } from 'next-auth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Clock, Timer, User, Trophy, Bot } from 'lucide-react';
+import { Clock, Timer, BookOpen, User, TrendingUp, Trophy, Bot, Code, Users } from 'lucide-react';
+import { MenuBar } from '@/components/ui/glow-menu';
 import StopwatchTab from '@/components/dashboard/StopwatchTab';
 import TimerTab from '@/components/dashboard/TimerTab';
 import TracksheetTab from '@/components/dashboard/TracksheetTab';
@@ -21,6 +22,80 @@ import Navbar from '@/components/Navbar';
 import { dashboardSettingsItems } from '@/components/navbar-config';
 import { TextScramble } from '@/components/ui/text-scramble';
 import FooterSection from '@/components/ui/footer';
+const menuItems = [
+  {
+    icon: Clock,
+    label: "Stopwatch",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+    iconColor: "text-blue-500",
+  },
+  {
+    icon: Timer,
+    label: "Timer",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+    iconColor: "text-orange-500",
+  },
+  {
+    icon: BookOpen,
+    label: "Tracksheet",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(6,182,212,0.15) 0%, rgba(8,145,178,0.06) 50%, rgba(15,118,110,0) 100%)",
+    iconColor: "text-cyan-500",
+  },
+  {
+    icon: User,
+    label: "Profile",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
+    iconColor: "text-red-500",
+  },
+  {
+    icon: TrendingUp,
+    label: "Graphs",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(147,51,234,0.06) 50%, rgba(109,40,217,0) 100%)",
+    iconColor: "text-purple-500",
+  },
+  {
+    icon: Trophy,
+    label: "Leaderboard",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.06) 50%, rgba(180,83,9,0) 100%)",
+    iconColor: "text-amber-500",
+  },
+  {
+    icon: Bot,
+    label: "Rank Buddy",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(79,70,229,0.06) 50%, rgba(67,56,202,0) 100%)",
+    iconColor: "text-indigo-500",
+  },
+  {
+    icon: Code,
+    label: "Codeforces",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(124,58,237,0.06) 50%, rgba(91,33,182,0) 100%)",
+    iconColor: "text-violet-500",
+  },
+  {
+    icon: Users,
+    label: "Social",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.06) 50%, rgba(4,120,87,0) 100%)",
+    iconColor: "text-emerald-500",
+  },
+];
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -147,43 +222,12 @@ export default function Dashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="flex items-center justify-start gap-1 bg-white/5 dark:bg-black/20 border border-white/10 dark:border-white/5 p-1 rounded-2xl w-full overflow-x-auto no-scrollbar shadow-lg">
-              <TabsTrigger
-                value="stopwatch"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
-              >
-                <Clock className="w-4 h-4" />
-                Stopwatch
-              </TabsTrigger>
-              <TabsTrigger
-                value="timer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
-              >
-                <Timer className="w-4 h-4" />
-                Timer
-              </TabsTrigger>
-              <TabsTrigger
-                value="profile"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
-              >
-                <User className="w-4 h-4" />
-                Profile
-              </TabsTrigger>
-              <TabsTrigger
-                value="leaderboard"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
-              >
-                <Trophy className="w-4 h-4" />
-                Leaderboard
-              </TabsTrigger>
-              <TabsTrigger
-                value="rankbuddy"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-cyan-500 data-[state=active]:text-white dark:data-[state=active]:bg-cyan-500/20 dark:data-[state=active]:text-cyan-400 hover:bg-white/5 shrink-0 cursor-pointer"
-              >
-                <Bot className="w-4 h-4" />
-                Rank Buddy
-              </TabsTrigger>
-            </TabsList>
+            <MenuBar
+              items={menuItems}
+              activeItem={activeTab}
+              onItemClick={(label) => setActiveTab(label.replace(/\s+/g, "").toLowerCase())}
+              className="w-full"
+            />
 
             <TabsContent value="stopwatch" className="outline-none">
               {activeTab === 'stopwatch' ? <StopwatchTab /> : null}
